@@ -32,7 +32,7 @@
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--text);font:400 17px/1.7 var(--sans);-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+body{margin:0;background:var(--bg);color:var(--text);font:400 17px/1.55 var(--sans);-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline;text-underline-offset:3px}
 code{font-family:var(--mono);font-size:.88em;color:var(--ink)}
@@ -53,10 +53,10 @@ h2{font:400 28px/1.3 var(--serif);color:var(--ink);margin:0 0 26px;text-align:ce
 h2::after{content:"";display:block;width:44px;height:2px;margin:12px auto 0;border-radius:2px;background:linear-gradient(90deg,var(--warm),var(--accent))}
 h3{font:500 16px/1.4 var(--sans);color:var(--ink);margin:0 0 6px}
 p{margin:0 0 14px}
-.lead{font:300 20px/1.75 var(--serif);color:var(--text);max-width:720px;margin:0 auto;text-align:justify;hyphens:auto}
+.lead{font:300 20px/1.58 var(--serif);color:var(--text);max-width:720px;margin:0 auto;text-align:justify;hyphens:auto}
 figure{margin:0}
 .panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:26px}
-figcaption{font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.6}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.5}
 .teaser svg{width:100%;height:auto;display:block}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
 .stat{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 20px}
@@ -174,7 +174,7 @@ sup{line-height:0;font-size:.7em}
 .drawer.open{grid-template-rows:1fr;opacity:1;transform:none}
 .drawer-in{overflow:hidden}
 .drawer .tiles{padding:10px 2px 4px;margin-top:0}
-.drawer .tile{opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s var(--spring),transform .5s var(--spring),border-color .2s}
+.drawer .tile{opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s var(--spring),transform .5s var(--spring),border-color .35s var(--spring),box-shadow .35s var(--spring)}
 .drawer.open .tile{opacity:1;transform:none;transition-delay:calc(var(--i,0) * 12ms)}
 .tile:hover{border-color:var(--ice)}
 @media (prefers-reduced-motion: reduce){
@@ -190,7 +190,7 @@ sup{line-height:0;font-size:.7em}
   background:var(--line);cursor:pointer;aspect-ratio:8/3}
 .tile img{width:100%;height:100%;object-fit:cover;display:block}
 .tile .n{position:absolute;left:5px;bottom:5px;font:500 12.5px/1 var(--mono);color:#fff;background:rgba(14,19,24,.62);border-radius:4px;padding:3px 5px}
-.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .tile:focus-visible,.chip:focus-visible,.rng-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .credit{font-size:13.5px;color:var(--muted);margin:14px 0 0}
 
@@ -235,8 +235,8 @@ h1,h2,h3,.team,.affil,.cap-h{text-wrap:balance}
     <p class="part-intro">Left: the dataset's human demonstration. Right: our retargeted G1&nbsp;+&nbsp;Dex3 reference (Tier&nbsp;1, kinematic playback, not a policy). The two play in sync, frame for frame.</p>
     <figure class="panel cmp">
       <div class="cmp-pair">
-        <div class="cmp-pane"><video id="cmpA" muted loop playsinline preload="none" width="640" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.mp4"></video><span class="lab">Human (dataset)</span></div>
-        <div class="cmp-pane"><video id="cmpB" muted loop playsinline preload="none" width="640" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.mp4"></video><span class="lab">G1 reference (ours)</span></div>
+        <div class="cmp-pane"><video id="cmpA" muted playsinline preload="none" width="640" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.mp4"></video><span class="lab">Human (dataset)</span></div>
+        <div class="cmp-pane"><video id="cmpB" muted playsinline preload="none" width="640" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.mp4"></video><span class="lab">G1 reference (ours)</span></div>
       </div>
     </figure>
     <div class="picker">
@@ -694,24 +694,33 @@ h1,h2,h3,.team,.affil,.cap-h{text-wrap:balance}
     setOpen(false);
     function both(fn){fn(A);fn(Bv);}
     function go(){ if(visible){ both(play); } }
-    A.addEventListener("timeupdate",function(){ if(Math.abs(Bv.currentTime-A.currentTime)>0.12) Bv.currentTime=A.currentTime; });
+    /* 3x playback; when an episode ends, the next one starts and its tile is highlighted */
+    var RATE=3, cur=0, N=tiles.length, pre=[document.createElement("video"),document.createElement("video")];
+    pre.forEach(function(v){ v.muted=true; v.preload="auto"; });
+    function rate(v){ v.defaultPlaybackRate=RATE; v.playbackRate=RATE; }
+    both(function(v){ rate(v); v.addEventListener("loadedmetadata",function(){ rate(v); }); v.addEventListener("play",function(){ rate(v); }); });
+    function pad(i){ return (i<10?"0":"")+i; }
+    function show(i){
+      cur=(i+N)%N; var ep=pad(cur);
+      both(function(v){v.pause();});
+      A.poster=BASE+"exo_ep"+ep+".jpg"; A.src=BASE+"exo_ep"+ep+".mp4";
+      Bv.poster=BASE+"ref_ep"+ep+".jpg"; Bv.src=BASE+"ref_ep"+ep+".mp4";
+      cap.textContent="Episode "+cur;
+      var pair=A.parentNode.parentNode; pair.classList.remove("swap"); void pair.offsetWidth; pair.classList.add("swap");
+      Array.prototype.forEach.call(tiles,function(x,k){x.setAttribute("aria-pressed",k===cur?"true":"false");});
+      var nx=pad((cur+1)%N); pre[0].src=BASE+"exo_ep"+nx+".mp4"; pre[1].src=BASE+"ref_ep"+nx+".mp4";
+    }
+    A.addEventListener("ended",function(){ show(cur+1); if(visible) both(play); });
+    A.addEventListener("play",function(){ if(!pre[0].src){ pre[0].src=BASE+"exo_ep01.mp4"; pre[1].src=BASE+"ref_ep01.mp4"; } });
+    A.addEventListener("timeupdate",function(){ if(Math.abs(Bv.currentTime-A.currentTime)>0.15) Bv.currentTime=A.currentTime; });
     A.addEventListener("play",function(){ if(Bv.paused) play(Bv); });
     A.addEventListener("pause",function(){ if(!Bv.paused) Bv.pause(); });
     if("IntersectionObserver" in window){
       new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting;
         if(visible){ if(!reduce||A.dataset.user) go(); } else both(function(v){v.pause();}); }); },{threshold:0.35}).observe(A);
     } else { visible=true; }
-    Array.prototype.forEach.call(tiles,function(t){
-      t.addEventListener("click",function(){
-        var ep=t.getAttribute("data-ep");
-        both(function(v){v.pause();});
-        A.poster=BASE+"exo_ep"+ep+".jpg"; A.src=BASE+"exo_ep"+ep+".mp4";
-        Bv.poster=BASE+"ref_ep"+ep+".jpg"; Bv.src=BASE+"ref_ep"+ep+".mp4";
-        A.dataset.user="1"; cap.textContent="Episode "+parseInt(ep,10);
-        var pair=A.parentNode.parentNode; pair.classList.remove("swap"); void pair.offsetWidth; pair.classList.add("swap");
-        Array.prototype.forEach.call(tiles,function(x){x.setAttribute("aria-pressed",x===t?"true":"false");});
-        visible=true; both(play);
-      });
+    Array.prototype.forEach.call(tiles,function(t,k){
+      t.addEventListener("click",function(){ A.dataset.user="1"; show(k); visible=true; both(play); });
     });
   }
 })();
