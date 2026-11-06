@@ -173,7 +173,7 @@ sup{line-height:0;font-size:.7em}
   transition:grid-template-rows .55s var(--spring),opacity .35s var(--spring),transform .55s var(--spring)}
 .drawer.open{grid-template-rows:1fr;opacity:1;transform:none}
 .drawer-in{overflow:hidden}
-.drawer .tiles{padding:10px 2px 4px;margin-top:0}
+.drawer .tiles{padding:10px 8px 10px;margin-top:0}
 .drawer .tile{opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s var(--spring),transform .5s var(--spring),border-color .35s var(--spring),box-shadow .35s var(--spring)}
 .drawer.open .tile{opacity:1;transform:none;transition-delay:calc(var(--i,0) * 12ms)}
 .tile:hover{border-color:var(--ice)}
@@ -190,7 +190,12 @@ sup{line-height:0;font-size:.7em}
   background:var(--line);cursor:pointer;aspect-ratio:8/3}
 .tile img{width:100%;height:100%;object-fit:cover;display:block}
 .tile .n{position:absolute;left:5px;bottom:5px;font:500 12.5px/1 var(--mono);color:#fff;background:rgba(14,19,24,.62);border-radius:4px;padding:3px 5px}
-.tile[aria-pressed="true"]{border-color:#e5383b;box-shadow:0 0 0 2px #e5383b}
+.tile[aria-pressed="true"]{border-color:#e5383b;box-shadow:0 0 0 2px #e5383b;animation:breathe 2.2s ease-in-out infinite}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 2px #e5383b,0 0 0 2px rgba(229,56,59,0)}
+  50%{box-shadow:0 0 0 2px #e5383b,0 0 0 7px rgba(229,56,59,.28)}
+}
+@media (prefers-reduced-motion: reduce){.tile[aria-pressed="true"]{animation:none}}
 .tile:focus-visible,.chip:focus-visible,.rng-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .credit{font-size:13.5px;color:var(--muted);margin:14px 0 0}
 
@@ -686,10 +691,7 @@ h1,h2,h3,.team,.affil,.cap-h{text-wrap:balance}
       aio.observe(pbtn);
     }
     function warm(){ Array.prototype.forEach.call(document.querySelectorAll("#tiles img"),function(im){ im.loading="eager"; }); }
-    if(pbtn&&"IntersectionObserver" in window){
-      var wio=new IntersectionObserver(function(es){ if(es.some(function(e){return e.isIntersecting;})){ warm(); wio.disconnect(); } },{rootMargin:"600px 0px"});
-      wio.observe(pbtn);
-    } else warm();
+    warm(); /* the comparison sits right under the title, so its thumbnails load with the page */
     document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&drawer&&drawer.classList.contains("open")){ setOpen(false); pbtn.focus(); } });
     setOpen(false);
     function both(fn){fn(A);fn(Bv);}
