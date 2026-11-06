@@ -197,6 +197,10 @@ sup{line-height:0;font-size:.7em}
   .lead{text-align:left}
   .tiles{grid-template-columns:repeat(2,1fr)}
 }
+/* no lone last word or lone last chip */
+p,li,figcaption,dd,summary,.lead,.part-intro,.credit,.stat .input{text-wrap:pretty}
+h1,h2,h3,.team,.affil,.cap-h{text-wrap:balance}
+.links.bal,.legend.bal{margin-left:auto;margin-right:auto}
 </style>
 </head>
 <body>
@@ -704,6 +708,52 @@ sup{line-height:0;font-size:.7em}
       });
     });
   }
+})();
+/* balance wrapped rows of chips, tags, buttons and legends: when a group wraps,
+   shrink it to the narrowest width that keeps the same number of rows */
+(function(){
+  var SEL=".links,.chips,.legend,.tags";
+  function rowCount(el){
+    var tops={},n=0;
+    Array.prototype.forEach.call(el.children,function(c){
+      if(c.offsetParent===null) return;
+      var t=c.offsetTop; if(!tops[t]){tops[t]=1;n++;}
+    });
+    return n;
+  }
+  function balance(el){
+    el.style.maxWidth=""; el.classList.remove("bal");
+    if(el.offsetParent===null) return;
+    var rows=rowCount(el); if(rows<2) return;
+    var hi=el.clientWidth, lo=0;
+    Array.prototype.forEach.call(el.children,function(c){lo=Math.max(lo,c.offsetWidth);});
+    el.classList.add("bal");
+    while(hi-lo>2){
+      var mid=Math.floor((lo+hi)/2);
+      el.style.maxWidth=mid+"px";
+      if(rowCount(el)>rows) lo=mid; else hi=mid;
+    }
+    el.style.maxWidth=(hi+1)+"px";
+  }
+  /* keep at least two words on the last line of every text block */
+  function nowidow(){
+    Array.prototype.forEach.call(document.querySelectorAll("main p,main figcaption,main li,main h2,main h3,main summary,header p"),function(el){
+      if(el.closest("pre")||el.dataset.nw) return;
+      var w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),n,last=null;
+      while((n=w.nextNode())) if(/\S/.test(n.data)) last=n;
+      if(!last) return;
+      var t=last.data.replace(/\s+$/,""), i=t.lastIndexOf(" ");
+      if(i>0){ last.data=t.slice(0,i)+"\u00a0"+t.slice(i+1)+last.data.slice(t.length); el.dataset.nw="1"; }
+    });
+  }
+  nowidow();
+  function all(){ Array.prototype.forEach.call(document.querySelectorAll(SEL),balance); }
+  var t=null;
+  function later(){ clearTimeout(t); t=setTimeout(all,60); }
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(all); else all();
+  window.addEventListener("load",all);
+  window.addEventListener("resize",later);
+  document.addEventListener("click",function(e){ if(e.target.closest("button")) later(); });
 })();
 </script>
 </body>
