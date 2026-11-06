@@ -1,0 +1,708 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video-to-Robot Grounding</title>
+<meta name="description" content="Maniphys Lab, NVIDIA V2D Challenge Track 2: one humanoid policy per human-object interaction episode, trained from clean trajectories, corrupted trajectories or a single exocentric video.">
+<meta property="og:title" content="Per-Episode Policy Selection with an Object-Orientation Reward for Video-to-Robot Grounding">
+<meta property="og:description" content="Maniphys Lab, NVIDIA V2D Challenge Track 2 (Robotic Grounding).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,500&family=JetBrains+Mono:wght@400&display=swap">
+<style>
+:root{
+  --bg:#f8fafb; --paper:#ffffff; --ink:#18212b; --text:#2f3a46; --muted:#6b7785; --faint:#a3adb8;
+  --line:#e3e8ed; --accent:#3f6e94; --accent-soft:#e8eff5; --ice:#9db8cf; --ok:#3f6e94;
+  --serif:"Source Serif 4",Georgia,serif; --sans:Inter,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1318; --paper:#141b22; --ink:#e8eef3; --text:#c5cfd8; --muted:#8a97a4; --faint:#56626e;
+    --line:#26313b; --accent:#8fb4d3; --accent-soft:#1a2733; --ice:#5d7d98; --ok:#8fb4d3;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1318; --paper:#141b22; --ink:#e8eef3; --text:#c5cfd8; --muted:#8a97a4; --faint:#56626e;
+  --line:#26313b; --accent:#8fb4d3; --accent-soft:#1a2733; --ice:#5d7d98; --ok:#8fb4d3;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:400 17px/1.7 var(--sans);-webkit-font-smoothing:antialiased;overflow-wrap:break-word}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline;text-underline-offset:3px}
+code{font-family:var(--mono);font-size:.88em;color:var(--ink)}
+.wrap{max-width:880px;margin:0 auto;padding:0 20px}
+header.hero{padding:88px 0 40px;text-align:center}
+.eyebrow{font:500 13px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+h1{font:300 clamp(32px,5.4vw,50px)/1.18 var(--serif);color:var(--ink);margin:22px auto 20px;max-width:780px;letter-spacing:-.01em}
+.team{font-size:18px;color:var(--ink);margin:0}
+.affil{font-size:15px;color:var(--muted);margin:4px 0 0}
+.links{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin:34px 0 0}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:9px 18px;border:1px solid var(--line);border-radius:999px;
+  background:var(--paper);color:var(--ink);font-size:15px;font-weight:500;transition:border-color .2s,background .2s}
+.btn:hover{border-color:var(--ice);background:var(--accent-soft);text-decoration:none}
+.btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6}
+section{padding:56px 0;border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+h2{font:400 28px/1.3 var(--serif);color:var(--ink);margin:0 0 22px;text-align:center}
+h3{font:500 16px/1.4 var(--sans);color:var(--ink);margin:0 0 6px}
+p{margin:0 0 14px}
+.lead{font:300 20px/1.75 var(--serif);color:var(--text);max-width:720px;margin:0 auto;text-align:justify;hyphens:auto}
+figure{margin:0}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:26px}
+figcaption{font-size:14.5px;color:var(--muted);margin-top:14px;line-height:1.6}
+.teaser svg{width:100%;height:auto;display:block}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:8px}
+.stat{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px 20px}
+.stat .tier{font:500 13px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .input{font-size:14.5px;color:var(--muted);margin:6px 0 16px;min-height:2.6em;line-height:1.45}
+.stat .big{font:300 41px/1 var(--serif);color:var(--ink)}
+.stat .big small{font:400 14px var(--sans);color:var(--muted);margin-left:6px}
+.stat dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:16px 0 0;font-size:14.5px}
+.stat dt{color:var(--muted)}
+.stat dd{margin:0;text-align:right;font-family:var(--mono);font-size:13.5px;color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:22px}
+.card p{font-size:15.5px;margin:0;color:var(--text)}
+.formula{font:400 20px/1.5 var(--serif);color:var(--ink);text-align:center;margin:6px 0 18px;font-style:italic}
+.bars{display:grid;gap:16px;margin-top:6px}
+.bar-row{display:grid;grid-template-columns:150px 1fr 118px;align-items:center;gap:14px;font-size:14.5px}
+.bar-row .lbl{color:var(--text)}
+.bar-row .lbl small{display:block;color:var(--muted);font-size:13px}
+.track{position:relative;height:22px;background:var(--accent-soft);border-radius:6px;overflow:hidden}
+.track .before{position:absolute;inset:0 auto 0 0;background:var(--ice);opacity:.55}
+.track .after{position:absolute;inset:0 auto 0 0;border-right:2px solid var(--accent);background:linear-gradient(90deg,transparent,rgba(63,110,148,.18))}
+.bar-row .val{font-family:var(--mono);font-size:13.5px;color:var(--ink);text-align:right;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;font-size:13.5px;color:var(--muted);margin-top:16px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:6px}
+.prog svg{width:100%;height:auto;display:block}
+ul.clean{margin:0;padding-left:18px}
+ul.clean li{margin:0 0 10px;font-size:15.5px}
+pre{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:18px 20px;overflow-x:auto;
+  font:400 13.5px/1.65 var(--mono);color:var(--text);margin:0}
+footer{padding:40px 0 60px;text-align:center;font-size:14px;color:var(--faint);border-top:1px solid var(--line)}
+footer p{margin:0 0 6px}
+footer a{color:var(--muted)}
+.theme{position:fixed;top:16px;right:16px;width:34px;height:34px;border-radius:50%;border:1px solid var(--line);
+  background:var(--paper);color:var(--muted);cursor:pointer;display:grid;place-items:center;z-index:5}
+.theme svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.6}
+
+/* gallery */
+.part{margin-top:44px}
+.part:first-of-type{margin-top:0}
+.part-h{display:flex;align-items:baseline;gap:12px;margin:0 0 6px}
+.part-h .k{font:500 13px/1 var(--mono);color:var(--accent)}
+.part-h h3{font:400 21px/1.35 var(--serif);margin:0}
+.part-intro{font-size:15.5px;color:var(--text);margin:0 0 16px;max-width:760px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.chip{font:500 13.5px/1 var(--sans);color:var(--muted);background:var(--paper);border:1px solid var(--line);
+  border-radius:999px;padding:7px 12px;cursor:pointer;transition:border-color .2s,background .2s,color .2s}
+.chip:hover{border-color:var(--ice);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--ice);color:var(--ink)}
+.chip-sep{width:1px;background:var(--line);margin:2px 4px}
+.vid{display:block;width:100%;height:auto;border-radius:10px;background:#0e1318}
+.r83{aspect-ratio:8/3}
+.r43{aspect-ratio:4/3}
+.pane[hidden]{display:none}
+.pane figcaption{margin-top:10px}
+.cap-h{color:var(--ink);font-weight:500}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.tag{font:500 11.5px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);
+  border:1px solid var(--line);border-radius:4px;padding:4px 6px}
+.tag.own{color:var(--accent);border-color:var(--ice)}
+.lr{display:grid;grid-template-columns:1fr 1fr;font:500 12.5px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+.lr span{padding-left:2px}
+.split{display:grid;grid-template-columns:1.2fr 1fr;gap:22px;align-items:start}
+details{font-size:14.5px;color:var(--muted);margin:0 0 14px}
+details summary{cursor:pointer;color:var(--accent)}
+details p{margin:8px 0 0}
+
+/* range chart (rollouts) */
+.rng{display:grid;gap:4px}
+.rng-row{display:grid;grid-template-columns:44px 1fr 86px;align-items:center;gap:10px;width:100%;
+  background:none;border:1px solid transparent;border-radius:8px;padding:6px 6px;cursor:pointer;font:inherit;color:inherit;text-align:left}
+.rng-row:hover{border-color:var(--line)}
+.rng-row[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--ice)}
+.rng-row .ep{font:500 13px var(--mono);color:var(--ink)}
+.rng-row .v{font:400 12.5px var(--mono);color:var(--ink);text-align:right;white-space:nowrap}
+.rt{position:relative;height:14px}
+.rt::before{content:"";position:absolute;left:0;right:0;top:6.5px;height:1px;background:var(--line)}
+.rt .seg{position:absolute;top:5px;height:4px;border-radius:2px;background:var(--ice)}
+.rt .md{position:absolute;top:2px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--accent)}
+.rt .th{position:absolute;left:50%;top:-4px;bottom:-4px;border-left:1px dashed var(--faint)}
+.rng-axis{display:grid;grid-template-columns:44px 1fr 86px;gap:10px;padding:0 6px;margin-top:4px}
+.rng-axis .ax{position:relative;height:16px;font:400 11.5px var(--mono);color:var(--muted)}
+.rng-axis .ax span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+sup{line-height:0;font-size:.7em}
+.rng-axis .ax span:first-child{transform:none}
+.rng-axis .ax span:last-child{transform:translateX(-100%)}
+
+/* MP-SR bars (cases) */
+.mp{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.mp-h{font-size:14px;color:var(--ink);font-weight:500;margin:0 0 8px}
+.mp-h small{display:block;font-weight:400;color:var(--muted)}
+.mrow{display:grid;grid-template-columns:72px 1fr;gap:10px;align-items:center;margin:0 0 8px;font-size:13.5px;color:var(--text)}
+.mb{display:grid;grid-template-columns:1fr 44px;gap:8px;align-items:center;margin:2px 0}
+.mb .t{height:9px;background:var(--accent-soft);border-radius:3px;overflow:hidden}
+.mb .t i{display:block;height:100%;background:var(--accent)}
+.mb.s43 .t i{background:var(--ice)}
+.mb b{font:400 12.5px var(--mono);color:var(--ink);text-align:right}
+
+/* 30-episode comparison */
+:root{--spring:cubic-bezier(.32,.72,0,1)}
+.cmp-pair.swap .cmp-pane video{animation:cmpIn .55s var(--spring) both}
+@keyframes cmpIn{from{opacity:0;transform:scale(.97);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+.picker{margin-top:14px}
+.picker-btn{display:flex;align-items:center;gap:10px;width:100%;padding:12px 16px;border:1px solid var(--line);border-radius:14px;
+  background:var(--paper);color:var(--ink);font:500 15px/1.2 var(--sans);cursor:pointer;
+  transition:border-color .3s var(--spring),box-shadow .3s var(--spring),border-radius .45s var(--spring)}
+.picker-btn:hover{border-color:var(--ice)}
+.picker-btn[aria-expanded="true"]{border-radius:14px 14px 4px 4px;box-shadow:0 8px 28px rgba(24,33,43,.08)}
+.picker-hint{color:var(--muted);font-weight:400;font-size:14px;margin-left:auto}
+.picker-btn svg{width:18px;height:18px;stroke:var(--muted);fill:none;stroke-width:1.8;transition:transform .5s var(--spring)}
+.picker-btn[aria-expanded="true"] svg{transform:rotate(180deg)}
+.drawer{display:grid;grid-template-rows:0fr;opacity:0;transform:translateY(-8px) scale(.985);transform-origin:top center;
+  transition:grid-template-rows .55s var(--spring),opacity .35s var(--spring),transform .55s var(--spring)}
+.drawer.open{grid-template-rows:1fr;opacity:1;transform:none}
+.drawer-in{overflow:hidden}
+.drawer .tiles{padding:10px 2px 4px;margin-top:0}
+.drawer .tile{opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s var(--spring),transform .5s var(--spring),border-color .2s}
+.drawer.open .tile{opacity:1;transform:none;transition-delay:calc(var(--i,0) * 12ms)}
+.tile:hover{border-color:var(--ice)}
+@media (prefers-reduced-motion: reduce){
+  .drawer,.drawer .tile,.picker-btn,.picker-btn svg{transition:none!important}
+  .cmp-pair.swap .cmp-pane video{animation:none}
+}
+.cmp-pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cmp-pane{position:relative;border-radius:10px;overflow:hidden;background:#0e1318;aspect-ratio:4/3}
+.cmp-pane video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.cmp-pane .lab{position:absolute;left:8px;top:8px;font:500 12.5px/1 var(--sans);color:#fff;background:rgba(14,19,24,.6);border-radius:5px;padding:5px 7px}
+.tiles{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}
+.tile{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:1px;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;
+  background:var(--line);cursor:pointer;aspect-ratio:8/3}
+.tile img{width:100%;height:100%;object-fit:cover;display:block}
+.tile .n{position:absolute;left:5px;bottom:5px;font:500 12.5px/1 var(--mono);color:#fff;background:rgba(14,19,24,.62);border-radius:4px;padding:3px 5px}
+.tile[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.tile:focus-visible,.chip:focus-visible,.rng-row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.credit{font-size:13.5px;color:var(--muted);margin:14px 0 0}
+
+@media (max-width:720px){
+  header.hero{padding:64px 0 28px}
+  .stats,.grid2,.split,.mp{grid-template-columns:1fr}
+  .bar-row{grid-template-columns:1fr 112px;}
+  .bar-row .lbl{grid-column:1/-1}
+  .panel{padding:18px}
+  .lead{text-align:left}
+  .tiles{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" aria-label="Toggle color theme"><svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+
+<header class="hero wrap">
+  <div class="eyebrow">NVIDIA V2D Challenge &middot; Track 2 &middot; Robotic Grounding</div>
+  <h1>Per-Episode Policy Selection with an Object-Orientation Reward for <span style="white-space:nowrap">Video-to-Robot</span> Grounding</h1>
+  <p class="team">Rongxuan Zhou<sup>1</sup>, Yuquan Chen<sup>2</sup>, Lixin Ruan<sup>2</sup>, Qingyuan Shan<sup>2</sup>, Yudong Tao<sup>2</sup></p>
+  <p class="affil"><sup>1</sup>Northeastern University &nbsp; <sup>2</sup>Maniphys Lab</p>
+  <nav class="links">
+    <a class="btn" href="https://huggingface.co/datasets/Rongxuan-Zhou/maniphys-lab-v2d-track2-submission/resolve/main/v2d-track2-technical-report.pdf"><svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg>Technical Report</a>
+    <a class="btn" href="#gallery"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m10 9 5 3-5 3z"/></svg>Videos</a>
+    <a class="btn" href="https://huggingface.co/datasets/Rongxuan-Zhou/maniphys-lab-v2d-track2-submission"><svg viewBox="0 0 24 24"><path d="M21 16V8l-9-5-9 5v8l9 5z"/><path d="M3.3 7.6 12 12.5l8.7-4.9M12 22V12.5"/></svg>Container</a>
+    <a class="btn" href="https://github.com/Rongxuan-Zhou/v2d-track2-robotic-grounding"><svg viewBox="0 0 24 24"><path d="M9 18 3 12l6-6M15 6l6 6-6 6"/></svg>Code</a>
+    <a class="btn" href="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Data Archive</a>
+    <a class="btn" href="https://nvidia-isaac.github.io/video_to_data/v2d_challenge/"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Challenge</a>
+  </nav>
+</header>
+
+<main class="wrap">
+
+<section>
+  <figure class="panel teaser">
+    <svg viewBox="0 0 840 250" role="img" aria-label="Pipeline: three input tiers, recovery, retargeting, per-episode policy training, evaluation and selection, packing">
+      <defs>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 10 5 0 10z" fill="var(--faint)"/></marker>
+      </defs>
+      <style>
+        .bx{fill:var(--paper);stroke:var(--line);stroke-width:1.2}
+        .hl{fill:var(--accent-soft);stroke:var(--ice);stroke-width:1.2}
+        .t{font:500 13px var(--sans);fill:var(--ink)}
+        .s{font:400 11px var(--sans);fill:var(--muted)}
+        .ln{stroke:var(--faint);stroke-width:1.2;fill:none;marker-end:url(#ar)}
+      </style>
+      <rect class="bx" x="10" y="20" width="150" height="56" rx="10"/><text class="t" x="85" y="44" text-anchor="middle">Tier 1</text><text class="s" x="85" y="62" text-anchor="middle">clean trajectories</text>
+      <rect class="bx" x="10" y="97" width="150" height="56" rx="10"/><text class="t" x="85" y="121" text-anchor="middle">Tier 2</text><text class="s" x="85" y="139" text-anchor="middle">corrupted trajectories</text>
+      <rect class="bx" x="10" y="174" width="150" height="56" rx="10"/><text class="t" x="85" y="198" text-anchor="middle">Tier 3</text><text class="s" x="85" y="216" text-anchor="middle">monocular exo video</text>
+      <rect class="bx" x="200" y="97" width="130" height="56" rx="10"/><text class="t" x="265" y="121" text-anchor="middle">Denoise</text><text class="s" x="265" y="139" text-anchor="middle">Tier 2 data only</text>
+      <rect class="bx" x="200" y="174" width="130" height="56" rx="10"/><text class="t" x="265" y="198" text-anchor="middle">Reconstruct</text><text class="s" x="265" y="216" text-anchor="middle">SAM 2 + CARI4D</text>
+      <rect class="bx" x="370" y="97" width="120" height="56" rx="10"/><text class="t" x="430" y="121" text-anchor="middle">Retarget</text><text class="s" x="430" y="139" text-anchor="middle">G1 + Dex3</text>
+      <rect class="hl" x="530" y="97" width="140" height="56" rx="10"/><text class="t" x="600" y="121" text-anchor="middle">Policy / episode</text><text class="s" x="600" y="139" text-anchor="middle">+ orientation reward</text>
+      <rect class="hl" x="710" y="97" width="120" height="56" rx="10"/><text class="t" x="770" y="121" text-anchor="middle">Select</text><text class="s" x="770" y="139" text-anchor="middle">4096-world rules</text>
+      <path class="ln" d="M160 48 H350 Q360 48 362 70 L366 108"/>
+      <path class="ln" d="M160 125 H196"/>
+      <path class="ln" d="M160 202 H196"/>
+      <path class="ln" d="M330 125 H366"/>
+      <path class="ln" d="M330 202 H350 Q360 202 362 180 L366 142"/>
+      <path class="ln" d="M490 125 H526"/>
+      <path class="ln" d="M670 125 H706"/>
+    </svg>
+    <figcaption>One pipeline serves all three tiers. Each episode gets its own FlashCHORD policy on the G1&nbsp;+&nbsp;Dex3, chosen by rules fixed in advance.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>Abstract</h2>
+  <p class="lead">Track 2 of the NVIDIA Video-to-Data Challenge asks how much reconstruction error a robot policy can tolerate. Each entry provides one simulated humanoid policy per human-object interaction episode, built from clean multi-view trajectories (Tier 1), corrupted trajectories (Tier 2) or a single exocentric video (Tier 3). We train one FlashCHORD policy per episode and tier with an added object-orientation reward. Rules fixed in advance keep, per episode, the policy that tracks its own tier's reference best in 4096 simulated worlds. On the public leaderboard, the counted files reach an SP-SR of 0.867, 0.733 and 0.467 on Tiers 1, 2 and 3. On Tier 3, SP-SR rose from 0.267 to 0.467 over eleven days.</p>
+</section>
+
+<section>
+  <h2>Results</h2>
+  <div class="stats">
+    <div class="stat">
+      <div class="tier">Tier 1</div>
+      <div class="input">Clean multi-view trajectories</div>
+      <div class="big">0.867<small>SP-SR</small></div>
+      <dl><dt>ADD-AUC</dt><dd>0.63535</dd><dt>MP-SR</dt><dd>0.70000</dd><dt>MPPE</dt><dd>8.47 cm</dd></dl>
+    </div>
+    <div class="stat">
+      <div class="tier">Tier 2</div>
+      <div class="input">Corrupted trajectories, denoised without Tier 1 data</div>
+      <div class="big">0.733<small>SP-SR</small></div>
+      <dl><dt>ADD-AUC</dt><dd>0.50890</dd><dt>MP-SR</dt><dd>0.53333</dd><dt>MPPE</dt><dd>15.32 cm</dd></dl>
+    </div>
+    <div class="stat">
+      <div class="tier">Tier 3</div>
+      <div class="input">Monocular exocentric video only</div>
+      <div class="big">0.467<small>SP-SR</small></div>
+      <dl><dt>ADD-AUC</dt><dd>0.28173</dd><dt>MP-SR</dt><dd>0.10000</dd><dt>MPPE</dt><dd>36.60 cm</dd></dl>
+    </div>
+  </div>
+</section>
+
+<section id="gallery">
+  <h2>Gallery</h2>
+  <p class="lead" style="margin-bottom:34px">All robot clips render a physics simulation or a kinematic reference, not a real robot. Tier&nbsp;3 clips draw our reconstruction over the exo video. Object colors encode orientation, so matching colors mean matching orientation. The yellow line is the object's segmentation outline.</p>
+
+  <!-- (a) human vs G1 -->
+  <div class="part" data-viewer>
+    <div class="part-h"><span class="k">a</span><h3>The reconstructed human and the G1 do the same motion</h3></div>
+    <p class="part-intro">Tier&nbsp;3. Left: the exo video with the reconstructed SOMA human and object. Right: the same reference retargeted to the G1&nbsp;+&nbsp;Dex3 (kinematic playback, not a policy). When the object is hidden, the left pane holds its last visible pose. Human silhouette median IoU against the video segmentation is 0.83 to 0.88.</p>
+    <div class="chips" role="group" aria-label="Episode">
+      <button class="chip" data-show="p15" aria-pressed="true">ep15 sign</button>
+      <button class="chip" data-show="p5" aria-pressed="false">ep5 box</button>
+      <button class="chip" data-show="p10" aria-pressed="false">ep10 table</button>
+      <button class="chip" data-show="p23" aria-pressed="false">ep23 stroller</button>
+      <button class="chip" data-show="p12" aria-pressed="false">ep12 platform</button>
+      <button class="chip" data-show="p14" aria-pressed="false">ep14 round table</button>
+    </div>
+    <figure class="pane" data-pane="p15">
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep15.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep15.mp4"></video>
+      <figcaption><span class="cap-h">ep15, <code>wet_floor_sign_pick_place_ground_08</code>.</span> The human and the G1 move alike as the sign turns during the hand-over.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="p5" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep5.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep5.mp4"></video>
+      <figcaption><span class="cap-h">ep5, <code>g1_box_rotate_01</code>.</span> The person pushes and turns a box; the G1 turns it with both hands.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="p10" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep10.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep10.mp4"></video>
+      <figcaption><span class="cap-h">ep10, <code>white_desk_lower_to_ground_10</code>.</span> A small table is moved from the desk to the ground.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="p23" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep23.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep23.mp4"></video>
+      <figcaption><span class="cap-h">ep23, <code>toy_stroller_back_forth_ground_04</code>.</span> A toy stroller is pushed back and forth.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="p12" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep12.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep12.mp4"></video>
+      <figcaption><span class="cap-h">ep12, <code>black_platform_turn_05</code>.</span> A nearly symmetric platform turns in place.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="p14" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep14.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/pair_ep14.mp4"></video>
+      <figcaption><span class="cap-h">ep14, <code>round_table_flip_08</code>.</span> The round table is flipped; its orientation in this reference is not yet fixed.</figcaption>
+    </figure>
+  </div>
+
+  <!-- (b) Tier 3 rollouts -->
+  <div class="part" data-viewer>
+    <div class="part-h"><span class="k">b</span><h3>Tier 3 policies in simulation</h3></div>
+    <p class="part-intro">Colored: the simulated object moved by the policy. Gray: the reference. Each clip is the exported world. Errors are measured against <em>our own reconstruction</em>, not ground truth; the frame text turns red above 10&nbsp;cm.</p>
+    <div class="split">
+      <div>
+        <figure class="pane" data-pane="r15">
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep15.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep15.mp4"></video>
+          <figcaption><span class="cap-h">ep15, corrected reference.</span> The sign turns with the reference.</figcaption>
+        </figure>
+        <figure class="pane" data-pane="r5" hidden>
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep5.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep5.mp4"></video>
+          <figcaption><span class="cap-h">ep5.</span> The object is lost late, an SP-SR failure in this world.</figcaption>
+        </figure>
+        <figure class="pane" data-pane="r10" hidden>
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep10.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep10.mp4"></video>
+          <figcaption><span class="cap-h">ep10.</span> The object stays on the reference.</figcaption>
+        </figure>
+        <figure class="pane" data-pane="r12" hidden>
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep12.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep12.mp4"></video>
+          <figcaption><span class="cap-h">ep12.</span> This reference predates the <a href="#video">orientation fix</a> and starts 180° off.</figcaption>
+        </figure>
+        <figure class="pane" data-pane="r14" hidden>
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep14.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep14.mp4"></video>
+          <figcaption><span class="cap-h">ep14.</span> The object is lost at the end; the reference orientation is also wrong.</figcaption>
+        </figure>
+        <figure class="pane" data-pane="r23" hidden>
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep23.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep23.mp4"></video>
+          <figcaption><span class="cap-h">ep23.</span> The object stays on the reference.</figcaption>
+        </figure>
+        <figure class="pane" data-pane="r27" hidden>
+          <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference</span></div>
+          <video class="vid r43 iv" muted loop playsinline controls preload="none" width="800" height="600" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep27.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/rollout_ep27.mp4"></video>
+          <figcaption><span class="cap-h">ep27, reference after pose-jump removal.</span> The basket stays on the reference.</figcaption>
+        </figure>
+      </div>
+      <figure>
+        <div class="rng" role="group" aria-label="Choose a rollout">
+          <button class="rng-row" data-show="r5" aria-pressed="false"><span class="ep">ep5</span><span class="rt"><span class="th"></span><span class="seg" style="left:21.6%;width:63.6%"></span><span class="md" style="left:21.6%"></span></span><span class="v">2.7 / 50.5</span></button>
+          <button class="rng-row" data-show="r10" aria-pressed="false"><span class="ep">ep10</span><span class="rt"><span class="th"></span><span class="seg" style="left:27.2%;width:19.8%"></span><span class="md" style="left:27.2%"></span></span><span class="v">3.5 / 8.7</span></button>
+          <button class="rng-row" data-show="r12" aria-pressed="false"><span class="ep">ep12</span><span class="rt"><span class="th"></span><span class="seg" style="left:11.5%;width:36.5%"></span><span class="md" style="left:11.5%"></span></span><span class="v">1.7 / 9.1</span></button>
+          <button class="rng-row" data-show="r14" aria-pressed="false"><span class="ep">ep14</span><span class="rt"><span class="th"></span><span class="seg" style="left:24.6%;width:75.3%"></span><span class="md" style="left:24.6%"></span></span><span class="v">3.1 / 99.5</span></button>
+          <button class="rng-row" data-show="r15" aria-pressed="true"><span class="ep">ep15</span><span class="rt"><span class="th"></span><span class="seg" style="left:13.9%;width:37.8%"></span><span class="md" style="left:13.9%"></span></span><span class="v">1.9 / 10.8</span></button>
+          <button class="rng-row" data-show="r23" aria-pressed="false"><span class="ep">ep23</span><span class="rt"><span class="th"></span><span class="seg" style="left:12.8%;width:31.2%"></span><span class="md" style="left:12.8%"></span></span><span class="v">1.8 / 7.6</span></button>
+          <button class="rng-row" data-show="r27" aria-pressed="false"><span class="ep">ep27</span><span class="rt"><span class="th"></span><span class="seg" style="left:16.1%;width:29.9%"></span><span class="md" style="left:16.1%"></span></span><span class="v">2.1 / 8.3</span></button>
+        </div>
+        <div class="rng-axis" aria-hidden="true"><span></span><div class="ax"><span style="left:0">1</span><span style="left:23.9%">3</span><span style="left:50%">10</span><span style="left:73.9%">30</span><span style="left:100%">100</span></div><span></span></div>
+        <figcaption>Object error vs. our reconstruction per exported world: median (dot) to maximum (bar end), cm, log scale. Dashed line: 10&nbsp;cm. Select a row to play it.</figcaption>
+      </figure>
+    </div>
+  </div>
+
+  <!-- (c) Tier 1 and Tier 2 cases -->
+  <div class="part" data-viewer>
+    <div class="part-h"><span class="k">c</span><h3>Tier 1 and Tier 2: success, a fall and two near misses</h3></div>
+    <p class="part-intro">Policy rollouts in physics simulation: the policy on the left, its reference on the right. A world counts toward MP-SR when its frame-averaged object position error is under 3&nbsp;cm and its orientation error under 30°.</p>
+    <details>
+      <summary>Why one policy both succeeds and fails, and how the worlds were picked</summary>
+      <p>All worlds start from the same state and differ only through GPU non-determinism, which grows into different outcomes. From one 256-world rollout we picked worlds by fixed rules, without viewing the video. Success: the world closest to the median position error of successful worlds. Fall: the world with the median gap between object loss and the pelvis crossing its threshold. Near miss: the failed world without a fall closest to the median position error.</p>
+    </details>
+    <div class="chips" role="group" aria-label="Case">
+      <button class="chip" data-show="c1" aria-pressed="true">T1 ep18 success</button>
+      <button class="chip" data-show="c2" aria-pressed="false">T1 ep18 fall</button>
+      <span class="chip-sep" aria-hidden="true"></span>
+      <button class="chip" data-show="c3" aria-pressed="false">T1 ep20 near miss</button>
+      <button class="chip" data-show="c4" aria-pressed="false">T1 ep20 success</button>
+      <span class="chip-sep" aria-hidden="true"></span>
+      <button class="chip" data-show="c5" aria-pressed="false">T2 ep24 near miss</button>
+      <button class="chip" data-show="c6" aria-pressed="false">T2 ep24 success</button>
+    </div>
+    <figure class="pane" data-pane="c1">
+      <div class="tags"><span class="tag">Simulation</span><span class="tag">Tier 1 clean reference</span></div>
+      <div class="lr"><span>Policy</span><span>Reference</span></div>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep18-w2048-cap4m-r3a-mf4090_success.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep18-w2048-cap4m-r3a-mf4090_success.mp4"></video>
+      <figcaption><span class="cap-h">Tier 1, ep18, <code>blue_trash_can_drag_sideways_08</code>, variant A: success.</span> The bin slides sideways and stays on the reference; 4096-world MP-SR 0.776.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="c2" hidden>
+      <div class="tags"><span class="tag">Simulation</span><span class="tag">Tier 1 clean reference</span></div>
+      <div class="lr"><span>Policy</span><span>Reference</span></div>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep18-w2048-cap4m-r3a-mf4090_fall.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep18-w2048-cap4m-r3a-mf4090_fall.mp4"></video>
+      <figcaption><span class="cap-h">Tier 1, ep18, same policy: fall.</span> The object slips at about 14.7&nbsp;s and the robot falls about 2.9&nbsp;s later.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="c3" hidden>
+      <div class="tags"><span class="tag">Simulation</span><span class="tag">Tier 1 clean reference</span></div>
+      <div class="lr"><span>Policy</span><span>Reference</span></div>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep20-w2048-cap4m-mf4090_nearmiss.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep20-w2048-cap4m-mf4090_nearmiss.mp4"></video>
+      <figcaption><span class="cap-h">Tier 1, ep20, <code>rice_cooker_clockwise_04</code>, official recipe: near miss.</span> The rice cooker turns too little: orientation error 37.3°, over 30°.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="c4" hidden>
+      <div class="tags"><span class="tag">Simulation</span><span class="tag">Tier 1 clean reference</span></div>
+      <div class="lr"><span>Policy</span><span>Reference</span></div>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep20-w2048-cap4m-r3a-mf4090_success.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t1-ep20-w2048-cap4m-r3a-mf4090_success.mp4"></video>
+      <figcaption><span class="cap-h">Tier 1, ep20, variant A: success.</span> Same episode and seed; the rotation now follows the reference. 4096-world MP-SR 0.794.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="c5" hidden>
+      <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference (v5.4)</span></div>
+      <div class="lr"><span>Policy</span><span>Reference v5.4</span></div>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t2-ep24-w2048-cap10m-ml40_nearmiss.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t2-ep24-w2048-cap10m-ml40_nearmiss.mp4"></video>
+      <figcaption><span class="cap-h">Tier 2, ep24, <code>watering_can_pour_right_02</code>, official recipe: near miss.</span> Errors vs. our v5.4 reference: 3.62&nbsp;cm and 31.5°, both over the limits.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="c6" hidden>
+      <div class="tags"><span class="tag">Simulation</span><span class="tag own">Own reference (v5.4)</span></div>
+      <div class="lr"><span>Policy</span><span>Reference v5.4</span></div>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1280" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t2-ep24-w2048-cap10m-r3a-ml40_success.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/cases/t2-ep24-w2048-cap10m-r3a-ml40_success.mp4"></video>
+      <figcaption><span class="cap-h">Tier 2, ep24, variant A: success.</span> 4096-world MP-SR vs. our v5.4 reference: 0.999 for both seeds.</figcaption>
+    </figure>
+
+    <figure class="panel" style="margin-top:18px">
+      <div class="mp">
+        <div>
+          <p class="mp-h">Tier 1, ep20<small>vs. the clean reference</small></p>
+          <div class="mrow"><span>Official</span><div><div class="mb"><span class="t"><i style="width:1.6%"></i></span><b>0.016</b></div><div class="mb s43"><span class="t"><i style="width:0%"></i></span><b>0.000</b></div></div></div>
+          <div class="mrow"><span>Variant A</span><div><div class="mb"><span class="t"><i style="width:79.4%"></i></span><b>0.794</b></div><div class="mb s43"><span class="t"><i style="width:91.8%"></i></span><b>0.918</b></div></div></div>
+        </div>
+        <div>
+          <p class="mp-h">Tier 2, ep24<small>vs. our v5.4 reference</small></p>
+          <div class="mrow"><span>Official</span><div><div class="mb"><span class="t"><i style="width:0%"></i></span><b>0.000</b></div><div class="mb s43"><span class="t"><i style="width:0%"></i></span><b>0.000</b></div></div></div>
+          <div class="mrow"><span>Variant A</span><div><div class="mb"><span class="t"><i style="width:99.9%"></i></span><b>0.999</b></div><div class="mb s43"><span class="t"><i style="width:99.9%"></i></span><b>0.999</b></div></div></div>
+        </div>
+      </div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>seed 42</span><span><i style="background:var(--ice)"></i>seed 43</span></div>
+      <figcaption>4096-world MP-SR in simulation. Variant A narrows the position reward width (0.2 to 0.05&nbsp;m) and the orientation termination (1.5 to 0.6&nbsp;rad).</figcaption>
+    </figure>
+  </div>
+
+  <!-- (d) 30 episodes: human vs our G1 reference -->
+  <div class="part" id="episodes">
+    <div class="part-h"><span class="k">d</span><h3>All 30 episodes, human and G1</h3></div>
+    <p class="part-intro">Left: the dataset's human demonstration. Right: our retargeted G1&nbsp;+&nbsp;Dex3 reference (Tier&nbsp;1, kinematic playback, not a policy). The two play in sync, frame for frame.</p>
+    <figure class="panel cmp">
+      <div class="cmp-pair">
+        <div class="cmp-pane"><video id="cmpA" muted loop playsinline preload="none" width="640" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.mp4"></video><span class="lab">Human (dataset)</span></div>
+        <div class="cmp-pane"><video id="cmpB" muted loop playsinline preload="none" width="640" height="480" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.mp4"></video><span class="lab">G1 reference (ours)</span></div>
+      </div>
+    </figure>
+    <div class="picker">
+      <button class="picker-btn" id="pickerBtn" aria-expanded="false" aria-controls="drawer">
+        <span class="picker-cur" id="cmpCap">Episode 0</span><span class="picker-hint">Choose episode</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="drawer" id="drawer"><div class="drawer-in">
+    <div class="tiles" id="tiles">
+      <button class="tile" style="--i:0" data-ep="00" aria-pressed="true" aria-label="Show episode 0"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep00.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep00.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep0</span></button>
+      <button class="tile" style="--i:1" data-ep="01" aria-pressed="false" aria-label="Show episode 1"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep01.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep01.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep1</span></button>
+      <button class="tile" style="--i:2" data-ep="02" aria-pressed="false" aria-label="Show episode 2"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep02.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep02.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep2</span></button>
+      <button class="tile" style="--i:3" data-ep="03" aria-pressed="false" aria-label="Show episode 3"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep03.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep03.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep3</span></button>
+      <button class="tile" style="--i:4" data-ep="04" aria-pressed="false" aria-label="Show episode 4"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep04.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep04.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep4</span></button>
+      <button class="tile" style="--i:5" data-ep="05" aria-pressed="false" aria-label="Show episode 5"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep05.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep05.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep5</span></button>
+      <button class="tile" style="--i:6" data-ep="06" aria-pressed="false" aria-label="Show episode 6"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep06.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep06.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep6</span></button>
+      <button class="tile" style="--i:7" data-ep="07" aria-pressed="false" aria-label="Show episode 7"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep07.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep07.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep7</span></button>
+      <button class="tile" style="--i:8" data-ep="08" aria-pressed="false" aria-label="Show episode 8"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep08.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep08.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep8</span></button>
+      <button class="tile" style="--i:9" data-ep="09" aria-pressed="false" aria-label="Show episode 9"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep09.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep09.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep9</span></button>
+      <button class="tile" style="--i:10" data-ep="10" aria-pressed="false" aria-label="Show episode 10"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep10.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep10.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep10</span></button>
+      <button class="tile" style="--i:11" data-ep="11" aria-pressed="false" aria-label="Show episode 11"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep11.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep11.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep11</span></button>
+      <button class="tile" style="--i:12" data-ep="12" aria-pressed="false" aria-label="Show episode 12"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep12.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep12.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep12</span></button>
+      <button class="tile" style="--i:13" data-ep="13" aria-pressed="false" aria-label="Show episode 13"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep13.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep13.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep13</span></button>
+      <button class="tile" style="--i:14" data-ep="14" aria-pressed="false" aria-label="Show episode 14"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep14.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep14.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep14</span></button>
+      <button class="tile" style="--i:15" data-ep="15" aria-pressed="false" aria-label="Show episode 15"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep15.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep15.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep15</span></button>
+      <button class="tile" style="--i:16" data-ep="16" aria-pressed="false" aria-label="Show episode 16"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep16.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep16.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep16</span></button>
+      <button class="tile" style="--i:17" data-ep="17" aria-pressed="false" aria-label="Show episode 17"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep17.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep17.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep17</span></button>
+      <button class="tile" style="--i:18" data-ep="18" aria-pressed="false" aria-label="Show episode 18"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep18.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep18.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep18</span></button>
+      <button class="tile" style="--i:19" data-ep="19" aria-pressed="false" aria-label="Show episode 19"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep19.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep19.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep19</span></button>
+      <button class="tile" style="--i:20" data-ep="20" aria-pressed="false" aria-label="Show episode 20"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep20.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep20.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep20</span></button>
+      <button class="tile" style="--i:21" data-ep="21" aria-pressed="false" aria-label="Show episode 21"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep21.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep21.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep21</span></button>
+      <button class="tile" style="--i:22" data-ep="22" aria-pressed="false" aria-label="Show episode 22"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep22.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep22.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep22</span></button>
+      <button class="tile" style="--i:23" data-ep="23" aria-pressed="false" aria-label="Show episode 23"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep23.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep23.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep23</span></button>
+      <button class="tile" style="--i:24" data-ep="24" aria-pressed="false" aria-label="Show episode 24"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep24.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep24.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep24</span></button>
+      <button class="tile" style="--i:25" data-ep="25" aria-pressed="false" aria-label="Show episode 25"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep25.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep25.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep25</span></button>
+      <button class="tile" style="--i:26" data-ep="26" aria-pressed="false" aria-label="Show episode 26"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep26.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep26.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep26</span></button>
+      <button class="tile" style="--i:27" data-ep="27" aria-pressed="false" aria-label="Show episode 27"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep27.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep27.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep27</span></button>
+      <button class="tile" style="--i:28" data-ep="28" aria-pressed="false" aria-label="Show episode 28"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep28.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep28.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep28</span></button>
+      <button class="tile" style="--i:29" data-ep="29" aria-pressed="false" aria-label="Show episode 29"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/exo_ep29.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><img src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/ref_ep29.jpg" alt="" width="640" height="480" loading="lazy" decoding="async"><span class="n">ep29</span></button>
+    </div>
+      </div></div>
+    </div>
+    <p class="credit">Human demonstration videos and the Tier&nbsp;3 video backgrounds are from the NVIDIA Video to Data Challenge dataset <a href="https://huggingface.co/datasets/nvidia/video_to_data_challenge">nvidia/video_to_data_challenge</a>, licensed under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>. The reconstruction overlays, G1 playback and simulation renders are ours.</p>
+  </div>
+</section>
+
+<section>
+  <h2>An object-orientation reward</h2>
+  <p class="lead" style="margin-bottom:22px">The official recipe rewards only object position, so a policy can keep the object close to the reference while turning it the wrong way. We add a 13th reward term on the geodesic angle &theta; between the simulated and reference object orientations:</p>
+  <div class="formula">r<sub>ori</sub> = w &middot; exp(&minus;&theta;<sup>2</sup> / &sigma;<sup>2</sup>), &nbsp; w = 1.0, &nbsp; &sigma; = 0.4 rad</div>
+  <figure class="panel">
+    <div class="bars">
+      <div class="bar-row"><div class="lbl">Episode 24<small>ADD-AUC</small></div><div class="track"><div class="after" style="width:94.8%"></div><div class="before" style="width:58.0%"></div></div><div class="val">0.580 → 0.948</div></div>
+      <div class="bar-row"><div class="lbl">Episode 7<small>ADD-AUC</small></div><div class="track"><div class="after" style="width:91.5%"></div><div class="before" style="width:62.2%"></div></div><div class="val">0.622 → 0.915</div></div>
+      <div class="bar-row"><div class="lbl">Episode 17<small>SP-SR</small></div><div class="track"><div class="after" style="width:93.2%"></div><div class="before" style="width:0%"></div></div><div class="val">0 → 0.932</div></div>
+    </div>
+    <div class="legend"><span><i style="background:var(--ice);opacity:.55"></i>without the term</span><span><i style="background:var(--accent-soft);border-right:2px solid var(--accent)"></i>with the term</span></div>
+    <figcaption>Tier 1, 4096-world evaluation in simulation vs. the clean reference. Ten of the 30 counted Tier 1 policies use the term.</figcaption>
+  </figure>
+</section>
+
+<section id="video">
+  <h2>From a single video</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Reconstruction</h3>
+      <p>Grounding DINO and SAM 2 segment the person and the object. CARI4D (MoGe-2 depth, FoundationPose tracking, contact refinement) and the SOMA body model reconstruct both. Later versions add calibrated intrinsics, ground and depth correction, a dynamics pass and temporally consistent object poses.</p>
+    </div>
+    <div class="card">
+      <h3>Frame-0 alignment</h3>
+      <p>Tier 3 has no released camera calibration. As the organizers permit, one rigid transform per episode, chosen by a fixed yaw rule, maps our frame&nbsp;0 to the Tier&nbsp;1 frame-0 pose. It changes only the frame references, so no policy is retrained.</p>
+    </div>
+  </div>
+  <figure class="panel prog" style="margin-top:14px">
+    <svg viewBox="0 0 760 210" role="img" aria-label="Tier 3 public leaderboard: SP-SR 0.267, 0.333, 0.467 and MPPE 54.99, 49.94, 36.60 cm on 18, 22 and 29 October">
+      <style>
+        .ax{stroke:var(--line);stroke-width:1}
+        .lb{font:400 11.5px var(--sans);fill:var(--muted)}
+        .vl{font:500 12px var(--mono);fill:var(--ink)}
+        .ti{font:500 12px var(--sans);fill:var(--muted);letter-spacing:.08em}
+        .l1{stroke:var(--accent);stroke-width:2;fill:none}
+        .l2{stroke:var(--ice);stroke-width:2;fill:none;stroke-dasharray:5 5}
+      </style>
+      <text class="ti" x="40" y="22">SP-SR (higher is better)</text>
+      <text class="ti" x="420" y="22">MPPE, cm (lower is better)</text>
+      <line class="ax" x1="40" y1="170" x2="340" y2="170"/>
+      <line class="ax" x1="420" y1="170" x2="720" y2="170"/>
+      <polyline class="l1" points="70,119 190,107 310,81"/>
+      <circle cx="70" cy="119" r="4" fill="var(--accent)"/><circle cx="190" cy="107" r="4" fill="var(--accent)"/><circle cx="310" cy="81" r="4" fill="var(--accent)"/>
+      <text class="vl" x="70" y="108" text-anchor="middle">0.267</text><text class="vl" x="190" y="96" text-anchor="middle">0.333</text><text class="vl" x="310" y="70" text-anchor="middle">0.467</text>
+      <polyline class="l2" points="450,60 570,70 690,97"/>
+      <circle cx="450" cy="60" r="4" fill="var(--ice)"/><circle cx="570" cy="70" r="4" fill="var(--ice)"/><circle cx="690" cy="97" r="4" fill="var(--ice)"/>
+      <text class="vl" x="450" y="49" text-anchor="middle">54.99</text><text class="vl" x="570" y="59" text-anchor="middle">49.94</text><text class="vl" x="690" y="86" text-anchor="middle">36.60</text>
+      <text class="lb" x="70" y="190" text-anchor="middle">Oct 18</text><text class="lb" x="190" y="190" text-anchor="middle">Oct 22</text><text class="lb" x="310" y="190" text-anchor="middle">Oct 29</text>
+      <text class="lb" x="450" y="190" text-anchor="middle">Oct 18</text><text class="lb" x="570" y="190" text-anchor="middle">Oct 22</text><text class="lb" x="690" y="190" text-anchor="middle">Oct 29</text>
+    </svg>
+    <figcaption>Tier 3 public leaderboard. Oct 22: new run list with frame-0 alignment. Oct 29: seven episodes replaced by policies trained on the latest reconstruction.</figcaption>
+  </figure>
+
+  <div class="part" data-viewer style="margin-top:34px">
+    <div class="part-h"><span class="k">&nbsp;</span><h3>Reconstruction fixes, before and after</h3></div>
+    <p class="part-intro">Tier 3. Left: the delivered gb5 reconstruction. Right: the corrected one.</p>
+    <div class="chips" role="group" aria-label="Episode">
+      <button class="chip" data-show="f15" aria-pressed="true">ep15 sign</button>
+      <button class="chip" data-show="f27" aria-pressed="false">ep27 basket</button>
+      <button class="chip" data-show="f12" aria-pressed="false">ep12 platform</button>
+    </div>
+    <figure class="pane" data-pane="f15">
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1120" height="420" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/recon_ep15.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/recon_ep15.mp4"></video>
+      <figcaption><span class="cap-h">Tier 3, ep15, <code>wet_floor_sign_pick_place_ground_08</code>.</span> The sign turns about 117° within one frame; the fix spreads the turn over about 1.2&nbsp;s.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="f27" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1120" height="420" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/recon_ep27.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/recon_ep27.mp4"></video>
+      <figcaption><span class="cap-h">Tier 3, ep27, <code>woven_basket_ground_desk_10</code>.</span> The lifted basket flips by 100 to 170°; the fix removes the jumps and picks one of two symmetric orientations.</figcaption>
+    </figure>
+    <figure class="pane" data-pane="f12" hidden>
+      <video class="vid r83 iv" muted loop playsinline controls preload="none" width="1120" height="420" poster="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/recon_ep12.jpg" src="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/gallery/recon_ep12.mp4"></video>
+      <figcaption><span class="cap-h">Tier 3, ep12, <code>black_platform_turn_05</code>.</span> The platform starts 180° off about the vertical axis (colors swap). The fix turns it back, shifting the surface by at most 3.5&nbsp;cm.</figcaption>
+    </figure>
+    <p class="credit">For ep12 and ep27 the reconstruction alone cannot separate the two orientation branches. The counted Tier&nbsp;3 file uses policies retrained on the branch that agrees with the frame-0 alignment.</p>
+  </div>
+</section>
+
+<section>
+  <h2>Limitations</h2>
+  <ul class="clean">
+    <li>Some episodes fail on every tier: the object leaves the reference soon after first contact, mostly by turning. Known Tier 3 causes are reference objects that turn before contact and objects that start on high surfaces.</li>
+    <li>The leaderboard scores one exported rollout per episode. Because of GPU non-determinism, a policy with a high 4096-world success rate can still fail there.</li>
+    <li>Tier 2 and Tier 3 selection uses scores vs. our own reference, which overstate leaderboard gains, most of all on Tier 3.</li>
+    <li>Each policy serves one episode, and all results are in simulation.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Citation</h2>
+<pre>@techreport{maniphys2026v2dtrack2,
+  title       = {Per-Episode Policy Selection with an Object-Orientation Reward
+                 for Video-to-Robot Grounding},
+  author      = {Zhou, Rongxuan and Chen, Yuquan and Ruan, Lixin and Shan, Qingyuan and Tao, Yudong},
+  institution = {maniphysAI lab},
+  type        = {Technical Report, NVIDIA V2D Challenge Track 2},
+  year        = {2026}
+}</pre>
+</section>
+
+</main>
+
+<footer>
+  <p>Maniphys Lab &middot; NVIDIA Video-to-Data Challenge 2026, Track 2</p>
+</footer>
+
+<script>
+(function(){
+  var root=document.documentElement, key="theme";
+  try{var s=localStorage.getItem(key); if(s) root.setAttribute("data-theme",s);}catch(e){}
+  document.getElementById("theme").addEventListener("click",function(){
+    var dark=root.getAttribute("data-theme")==="dark"||(!root.getAttribute("data-theme")&&matchMedia("(prefers-color-scheme: dark)").matches);
+    var next=dark?"light":"dark"; root.setAttribute("data-theme",next);
+    try{localStorage.setItem(key,next);}catch(e){}
+  });
+})();
+
+(function(){
+  var BASE="https://huggingface.co/datasets/Rongxuan-Zhou/v2d-track2-research-archive/resolve/main/mac/repo/runs/site_media/";
+  var reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function play(v){var p=v.play(); if(p&&p.catch) p.catch(function(){});}
+  var io=null;
+  if("IntersectionObserver" in window){
+    io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        var v=e.target;
+        if(e.isIntersecting){ if(!reduce||v.dataset.user) play(v); }
+        else if(!v.paused) v.pause();
+      });
+    },{threshold:0.35});
+  }
+  function watch(v){ if(io) io.observe(v); }
+  Array.prototype.forEach.call(document.querySelectorAll("video.iv"),watch);
+
+  /* chip viewers: show one pane at a time */
+  Array.prototype.forEach.call(document.querySelectorAll("[data-viewer]"),function(vw){
+    var btns=vw.querySelectorAll("[data-show]"), panes=vw.querySelectorAll("[data-pane]");
+    Array.prototype.forEach.call(btns,function(b){
+      b.addEventListener("click",function(){
+        var id=b.getAttribute("data-show");
+        Array.prototype.forEach.call(panes,function(p){
+          var on=p.getAttribute("data-pane")===id;
+          if(!on){var v=p.querySelector("video"); if(v&&!v.paused) v.pause();}
+          p.hidden=!on;
+        });
+        Array.prototype.forEach.call(btns,function(x){x.setAttribute("aria-pressed",x.getAttribute("data-show")===id?"true":"false");});
+      });
+    });
+  });
+
+  /* 30-episode comparison: two synced videos */
+  var A=document.getElementById("cmpA"), Bv=document.getElementById("cmpB"), cap=document.getElementById("cmpCap");
+  if(A&&Bv){
+    var visible=false, tiles=document.querySelectorAll("#tiles .tile");
+    var pbtn=document.getElementById("pickerBtn"), drawer=document.getElementById("drawer");
+    function setOpen(o){ if(!drawer) return; drawer.classList.toggle("open",o); pbtn.setAttribute("aria-expanded",o?"true":"false");
+      Array.prototype.forEach.call(tiles,function(t){t.tabIndex=o?0:-1;}); }
+    var userToggled=false;
+    if(pbtn) pbtn.addEventListener("click",function(){ userToggled=true; setOpen(!drawer.classList.contains("open")); });
+    /* open the drawer once when the picker scrolls into view; a manual toggle wins after that */
+    if(pbtn&&"IntersectionObserver" in window){
+      var aio=new IntersectionObserver(function(es){
+        es.forEach(function(e){ if(e.isIntersecting&&!userToggled){ setOpen(true); aio.disconnect(); } });
+      },{threshold:1,rootMargin:"0px 0px -18% 0px"});
+      aio.observe(pbtn);
+    }
+    function warm(){ Array.prototype.forEach.call(document.querySelectorAll("#tiles img"),function(im){ im.loading="eager"; }); }
+    if(pbtn&&"IntersectionObserver" in window){
+      var wio=new IntersectionObserver(function(es){ if(es.some(function(e){return e.isIntersecting;})){ warm(); wio.disconnect(); } },{rootMargin:"600px 0px"});
+      wio.observe(pbtn);
+    } else warm();
+    document.addEventListener("keydown",function(e){ if(e.key==="Escape"&&drawer&&drawer.classList.contains("open")){ setOpen(false); pbtn.focus(); } });
+    setOpen(false);
+    function both(fn){fn(A);fn(Bv);}
+    function go(){ if(visible){ both(play); } }
+    A.addEventListener("timeupdate",function(){ if(Math.abs(Bv.currentTime-A.currentTime)>0.12) Bv.currentTime=A.currentTime; });
+    A.addEventListener("play",function(){ if(Bv.paused) play(Bv); });
+    A.addEventListener("pause",function(){ if(!Bv.paused) Bv.pause(); });
+    if("IntersectionObserver" in window){
+      new IntersectionObserver(function(es){ es.forEach(function(e){ visible=e.isIntersecting;
+        if(visible){ if(!reduce||A.dataset.user) go(); } else both(function(v){v.pause();}); }); },{threshold:0.35}).observe(A);
+    } else { visible=true; }
+    Array.prototype.forEach.call(tiles,function(t){
+      t.addEventListener("click",function(){
+        var ep=t.getAttribute("data-ep");
+        both(function(v){v.pause();});
+        A.poster=BASE+"exo_ep"+ep+".jpg"; A.src=BASE+"exo_ep"+ep+".mp4";
+        Bv.poster=BASE+"ref_ep"+ep+".jpg"; Bv.src=BASE+"ref_ep"+ep+".mp4";
+        A.dataset.user="1"; cap.textContent="Episode "+parseInt(ep,10);
+        var pair=A.parentNode.parentNode; pair.classList.remove("swap"); void pair.offsetWidth; pair.classList.add("swap");
+        Array.prototype.forEach.call(tiles,function(x){x.setAttribute("aria-pressed",x===t?"true":"false");});
+        visible=true; both(play);
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
