@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# 把本地工作树暂存到训练机的 runs/stage/<来历>/（Mac 上、仓库根执行），供链结束后 stages/policy/stage_sync.sh 在机器本地同步进仓库副本。
+# 计划 agent-doc/plan-t12night-2026-10-30.md 第 2 节：链在跑时 scripts/dev/remote 拒绝同步；暂存目录在 runs/ 下，主同步保护 runs/、不碰它，
+# 在跑的链也不读它。发送端过滤规则与 scripts/dev/remote 相同（复用 .gitignore、不传 results、不传 .git），所以 .env、data、runs 不会传过去。
+# 只暂存干净的提交（git status 有改动就拒绝），暂存目录的 .v2d-source-commit 写 12 位版本。目录已存在就拒绝（同一来历只暂存一次）。
+# 用法：scripts/dev/stage-remote              # 默认 .env 那台
+#       V2D_ENV=ml40 scripts/dev/stage-remote # 读 .env.ml40
+#       V2D_DRYRUN=1 scripts/dev/stage-remote # 只列出会传什么
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+. "$ROOT/scripts/dev/_load-env"
+case "$V2D_REMOTE" in
+  ""|/|"~"|"~/"|/root|/home|/home/*/) echo "V2D_REMOTE 不安全: '${V2D_REMOTE}'" >&2; exit 1 ;;
+esac
+ssh "$V2D_HOST" "test -f '$V2D_REMOTE/.v2d-remote-root'" || { echo "远端 ${V2D_REMOTE} 未初始化（缺 .v2d-remote-root）" >&2; exit 1; }
+[ -z "$(git -C "$ROOT" status --porcelain -- . ':(exclude)results')" ] || { echo "工作树有改动：先提交再暂存" >&2; exit 1; }
+C="$(git -C "$ROOT" describe --always --abbrev=12)"
+[[ $C =~ ^[0-9a-f]{12}$ ]] || { echo "来历不是 12 位版本：$C" >&2; exit 1; }
+D="$V2D_REMOTE/runs/stage/$C"
+RS=(-az)
+if [ "${V2D_DRYRUN:-0}" = 1 ]; then RS+=(-n -i)
+else ssh "$V2D_HOST" "test ! -e '$D' && mkdir -p '$D'" || { echo "暂存目录已存在或建不了：$D" >&2; exit 1; }
+fi
+rsync "${RS[@]}" \
+      --filter='H /results/***' \
+      --filter='+ /.env.example' \
+      --filter=':- .gitignore' \
+      --exclude '.git/' \
+      "$ROOT/" "$V2D_HOST:$D/"
+[ "${V2D_DRYRUN:-0}" = 1 ] && exit 0
+ssh "$V2D_HOST" "printf '%s\n' '$C' > '$D/.v2d-source-commit'"
+echo "STAGED $V2D_HOST:$D"

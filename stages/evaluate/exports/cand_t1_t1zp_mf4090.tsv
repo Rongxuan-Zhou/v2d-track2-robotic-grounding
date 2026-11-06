@@ -1,0 +1,4 @@
+# Tier 1 冲第一 A2：变体 A 加物体朝向项 seed 42（ep20 另起 t1zp_s43 段，seed 43；mf4090，buffer 400 万，基线取 Tier 1 现在交的清单），段 t1zp 的候选导出（计划 agent-doc/plan-t1push-2026-10-29.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	8	t1-ep8-w2048-cap4m-r3o-mf4090	349999104
+1	21	t1-ep21-w2048-cap4m-r3o-mf4090	349999104
+1	17	t1-ep17-w2048-cap4m-r3o-mf4090	349999104

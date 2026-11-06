@@ -1,0 +1,3 @@
+# Tier 3 gb5 差一点的 4 集（ep5、10、3、14）换种子：变体 A（ml40，buffer 1000 万，参考是 runs/motion/tier3_gb5，支撑面按 gb5），种子由 --seed 给，段 t3qs_s44 的候选导出（计划 agent-doc/plan-t3s43-2026-10-26.md）：档位 episode run 步数。本段改种子：种子 44（reset.seed=44 training.seed=44）。make_var_queue.py 生成，不要手改。
+3	3	t3-ep3-w2048-cap10m-r3a-gb5-s44-ml40	349999104
+3	14	t3-ep14-w2048-cap10m-r3a-gb5-s44-ml40	349999104

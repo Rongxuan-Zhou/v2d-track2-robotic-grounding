@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep17-w2048-cap10m-r3o-nv-s43-ml40	smoke-t1-ep17-w2048-cap10m-r3o-nv-s43-ml40	2026-05-01_17-04-55_traffic_cone_ground_table_02	frame	440	true	0.015	0.086	10000000	43	no

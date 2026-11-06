@@ -1,0 +1,21 @@
+{
+  "_doc": "r3o 段间门的规格（计划 agent-doc/plan-r3o-2026-10-15.md 第 3 节与 2.2、2.3；10/15 15:0x MDT、P1a 出结果之前登记）。baseline_obj_fail 是现在交的那条 run（Tier 1 t1c1014b、Tier 2 b1014）4096 世界评测的失败_物体（reference_tracking.failure_cause_fraction.object），baseline_sp 是它的 SP-SR，取自 results/day2/、results/ml40/day2/ 的 eval_<run>_s349999104.txt（stages/evaluate/eval_table.py）。",
+  "t1oa": {
+    "tier": 1,
+    "control": {"run": "t1-ep20-w2048-cap4m-r3o-mf4090", "floor": 0.45},
+    "lost": {
+      "t1-ep25-w2048-cap4m-r3o-mf4090": {"baseline_run": "t1-ep25-w2048-cap10m-ml40", "baseline_obj_fail": 1.000, "baseline_sp": 0.000},
+      "t1-ep28-w2048-cap4m-r3o-mf4090": {"baseline_run": "t1-ep28-w2048-cap4m-p185-mf4090", "baseline_obj_fail": 1.000, "baseline_sp": 0.000},
+      "t1-ep11-w2048-cap4m-r3o-mf4090": {"baseline_run": "t1-ep11-w2048-cap4m-mf4090", "baseline_obj_fail": 0.999, "baseline_sp": 0.000}
+    }
+  },
+  "t2oa": {
+    "tier": 2,
+    "control": {"run": "t2-ep12-w2048-cap10m-r3o-ml40", "floor": 0.5},
+    "lost": {
+      "t2-ep25-w2048-cap10m-r3o-ml40": {"baseline_run": "t2-ep25-w2048-cap4m-mf4090", "baseline_obj_fail": 1.000, "baseline_sp": 0.000},
+      "t2-ep28-w2048-cap10m-r3o-ml40": {"baseline_run": "t2-ep28-w2048-cap4m-p185-mf4090", "baseline_obj_fail": 1.000, "baseline_sp": 0.000},
+      "t2-ep1-w2048-cap10m-r3o-ml40": {"baseline_run": "t2-ep1-w2048-cap10m-r3a-ml40", "baseline_obj_fail": 1.000, "baseline_sp": 0.000}
+    }
+  }
+}

@@ -1,0 +1,2 @@
+# Tier 1 跟丢的集：基础配方加物体朝向项（-r3o-nv-，不加变体 A）seed 42，ml40，buffer 1000 万；配方取 10/9 清单里同集的 run，段 t1hr 的候选导出（计划 agent-doc/plan-t1hard-2026-10-31.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	17	t1-ep17-w2048-cap10m-r3o-nv-ml40	349999104

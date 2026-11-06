@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep4-w2048-cap10m-fc20-s43-ml40	smoke-t1-ep4-w2048-cap10m-fc20-s43-ml40	2026-04-24_11-40-52_baseball_bat_rotate_05	frame	803	false	0.015	0.086	10000000	43	no

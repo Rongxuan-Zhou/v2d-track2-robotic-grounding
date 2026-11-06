@@ -1,0 +1,12 @@
+# 逐帧终止分析，ml40（计划 agent-doc/plan-frame-onset-2026-10-14.md 第 2 节）：Tier 3 best_hm 失败的 3 条、ep12 两版、Tier 1 丙 4 条，最后是跟上的 ep7、ep8（对照，审查第 13 条）
+t3-ep4-w2048-cap10m-r3a-hm-ml40 349999104
+t3-ep5-w2048-cap10m-r3a-hm-ml40 349999104
+t3-ep6-w2048-cap10m-r3a-hm-ml40 349999104
+t3-ep12-w2048-cap4m-r3a-dyn4-ml40 349999104
+t3-ep12-w2048-cap4m-r3a-dyn4s-ml40 349999104
+t1-ep2-w2048-cap10m-r3a-ml40 349999104
+t1-ep4-w2048-cap10m-ml40 349999104
+t1-ep9-w2048-cap10m-ml40 349999104
+t1-ep25-w2048-cap10m-ml40 349999104
+t3-ep7-w2048-cap10m-r3a-hm-ml40 349999104
+t3-ep8-w2048-cap10m-r3a-hm-ml40 349999104

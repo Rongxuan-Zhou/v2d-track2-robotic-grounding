@@ -1,0 +1,6 @@
+# Tier 2 ep25 冒烟密存档的前 5 份 checkpoint，段 t2sd 的候选导出（计划 agent-doc/plan-t2sd-2026-10-19.md）：档位 episode run 步数。
+2	25	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	409600
+2	25	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	819200
+2	25	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	1228800
+2	25	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	1638400
+2	25	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	2048000

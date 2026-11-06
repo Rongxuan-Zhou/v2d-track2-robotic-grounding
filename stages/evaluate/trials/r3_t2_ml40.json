@@ -1,0 +1,49 @@
+{
+ "plan": "agent-doc/plan-step3-recipe-trial-2026-10-04.md",
+ "tier": 2,
+ "machine": "ml40",
+ "steps": 349999104,
+ "worlds": 4096,
+ "episodes": [
+  {
+   "ep": 8,
+   "base42": "t2-ep8-w2048-cap10m-ml40",
+   "var42": "t2-ep8-w2048-cap10m-r3a-ml40",
+   "base43": "t2-ep8-w2048-cap10m-s43-ml40",
+   "var43": "t2-ep8-w2048-cap10m-r3a-s43-ml40"
+  },
+  {
+   "ep": 12,
+   "base42": "t2-ep12-w2048-cap10m-ml40",
+   "var42": "t2-ep12-w2048-cap10m-r3a-ml40",
+   "base43": "t2-ep12-w2048-cap10m-s43-ml40",
+   "var43": "t2-ep12-w2048-cap10m-r3a-s43-ml40"
+  },
+  {
+   "ep": 20,
+   "base42": "t2-ep20-w2048-cap10m-ml40",
+   "var42": "t2-ep20-w2048-cap10m-r3a-ml40",
+   "base43": "t2-ep20-w2048-cap10m-s43-ml40",
+   "var43": "t2-ep20-w2048-cap10m-r3a-s43-ml40"
+  },
+  {
+   "ep": 24,
+   "base42": "t2-ep24-w2048-cap10m-ml40",
+   "var42": "t2-ep24-w2048-cap10m-r3a-ml40",
+   "base43": "t2-ep24-w2048-cap10m-s43-ml40",
+   "var43": "t2-ep24-w2048-cap10m-r3a-s43-ml40"
+  },
+  {
+   "ep": 26,
+   "base42": "t2-ep26-w2048-cap10m-ml40",
+   "var42": "t2-ep26-w2048-cap10m-r3a-ml40",
+   "base43": "t2-ep26-w2048-cap10m-s43-ml40",
+   "var43": "t2-ep26-w2048-cap10m-r3a-s43-ml40"
+  }
+ ],
+ "canary": {
+  "ep": 22,
+  "base42": "t2-ep22-w2048-cap10m-ml40",
+  "var42": "t2-ep22-w2048-cap10m-r3a-ml40"
+ }
+}

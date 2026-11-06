@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t3-ep13-w2048-cap4m-r3a-gb5-ocoff-mf4090	smoke-t3-ep13-w2048-cap4m-r3a-gb5-ocoff-mf4090	2026-06-09_10-19-09_snack_box_desk_through_06	frame	922	true	0.015	0.086	4000000	42	no

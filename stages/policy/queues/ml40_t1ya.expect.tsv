@@ -1,0 +1,7 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep2-w2048-cap10m-r3a-ml40	smoke-t1-ep2-w2048-cap10m-r3a-ml40	2026-06-02_10-04-42_blue_easter_basket_place_10	frame	980	true	0.015	0.086	10000000	42	no
+t1-ep11-w2048-cap10m-r3a-ml40	smoke-t1-ep11-w2048-cap10m-r3a-ml40	2026-04-24_13-56-58_light_blue_book_pick_place_09	frame	901	true	0.015	0.086	10000000	42	no
+t1-ep16-w2048-cap10m-r3a-ml40	smoke-t1-ep16-w2048-cap10m-r3a-ml40	2026-03-12_15-06-36_spray_bottle_left_desk_ground_02	frame	477	true	0.015	0.086	10000000	42	no
+t1-ep4-w2048-cap10m-r3a-ml40	smoke-t1-ep4-w2048-cap10m-r3a-ml40	2026-04-24_11-40-52_baseball_bat_rotate_05	frame	803	false	0.015	0.086	10000000	42	no
+t1-ep9-w2048-cap10m-r3a-ml40	smoke-t1-ep9-w2048-cap10m-r3a-ml40	2026-06-04_16-45-04_big_red_bowl_under_skinny_wood_chair_03	frame	870	true	0.015	0.086	10000000	42	no
+t1-ep25-w2048-cap10m-r3a-ml40	smoke-t1-ep25-w2048-cap10m-r3a-ml40	2026-03-20_11-59-57_cyan_water_bottle_rotate_01	frame	859	true	0.015	0.086	10000000	42	no

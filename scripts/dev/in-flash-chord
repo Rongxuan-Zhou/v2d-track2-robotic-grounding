@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# 在一次性 FlashCHORD 容器里跑命令（训练机上执行）。参数照官方 flash_chord/docker/run.sh start：
+# 同一镜像、host 网络、uid 身份映射、EGL 渲染、NVIDIA_DRIVER_CAPABILITIES=all、资产只读挂 /v2d/assets。
+# 额外：整仓挂 /repo——我们的 parquet 在 runs/，里面的网格路径写的是 /repo/...；
+# 训练产物用 output_dir=/repo/runs/flash_chord/... 落进 runs/，不写进上游目录树。
+# V2D_GPU=1 时加 GPU（这台 4090 共用，默认不占）。用法：scripts/dev/in-flash-chord '<bash 命令>'
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+FC="$ROOT/third_party/video_to_data/robotic_grounding/flash_chord"
+ASSETS="$FC/../source/robotic_grounding/robotic_grounding/assets"
+# V2D_FC_SRC=<目录>：只把挂到 /workspace 的 flash_chord 源码换成这个目录（诊断用的补丁副本，由 stages/policy/make_patched_fc_src.sh
+# 生成，里面必须有 SOURCE_V2D.txt 说明来历）；素材目录仍取原 checkout。默认不设，行为与原来完全相同。
+if [ -n "${V2D_FC_SRC:-}" ]; then
+  [ -f "$V2D_FC_SRC/SOURCE_V2D.txt" ] && [ -d "$V2D_FC_SRC/src/flash_chord" ] \
+    || { echo "in-flash-chord: V2D_FC_SRC=$V2D_FC_SRC 不是 make_patched_fc_src.sh 生成的源码副本" >&2; exit 2; }
+  FC="$(cd "$V2D_FC_SRC" && pwd -P)"
+  echo "in-flash-chord: /workspace ← $FC（$(head -1 "$FC/SOURCE_V2D.txt")）" >&2
+fi
+ID="$HOME/.cache/flash_chord/oneoff"; mkdir -p "$ID"
+U="$(id -un)"; G="$(id -gn)"
+printf 'root:x:0:0:root:/root:/bin/bash\n%s:x:%s:%s:%s:/tmp:/bin/bash\n' "$U" "$(id -u)" "$(id -g)" "$U" > "$ID/passwd"
+printf 'root:x:0:\n%s:x:%s:\n' "$G" "$(id -g)" > "$ID/group"
+GPU=(); [ "${V2D_GPU:-0}" = 1 ] && GPU=(--runtime=nvidia --gpus "device=${V2D_GPU_DEVICE:-0}")
+# 宿主机上已设置的这些变量按名字转发进容器：-e NAME 只写变量名，值由 docker 从环境读，不进 argv
+# （这台机器多人共用，argv 对所有人可见；CLAUDE.md：凭据不落命令行）。
+# HTTPS_PROXY 等四项：fc_run.sh 在 V2D_WANDB_PROXY=1 时设，W&B 经代理（10/30 起直连返回 403）。
+# V2D_OBJ_ORI_WEIGHT、V2D_OBJ_ORI_STD：r3o 的物体朝向项（只有 v040_p185_nfg_oo 副本读它们，计划 agent-doc/plan-r3o-2026-10-15.md 2.1）
+ENVS=()
+for v in WANDB_API_KEY WANDB_RUN_ID WANDB_RESUME WANDB_TAGS WANDB_INIT_TIMEOUT \
+         XLA_PYTHON_CLIENT_PREALLOCATE XLA_CLIENT_MEM_FRACTION TF_CPP_MIN_LOG_LEVEL V2D_OBJ_ORI_WEIGHT V2D_OBJ_ORI_STD \
+         HTTPS_PROXY https_proxy NO_PROXY no_proxy; do
+  [ -n "${!v+x}" ] && ENVS+=(-e "$v")
+done
+# V2D_CONTAINER_NAME：给容器命名，便于接管与 docker stop。
+# V2D_DETACH=1：后台运行且不 --rm，打印容器 ID 后返回；由调用方 docker logs / wait / rm（fc_run.sh 用）。
+RUNMODE=(--rm); [ "${V2D_DETACH:-0}" = 1 ] && RUNMODE=(-d)
+NAME=(); [ -n "${V2D_CONTAINER_NAME:-}" ] && NAME=(--name "$V2D_CONTAINER_NAME" --label "v2d.owner=$U")
+# 容器里看不到 .env（凭据）：用空文件遮住；W&B key 只经上面的环境变量白名单进容器
+MASK=(); [ -f "$ROOT/.env" ] && MASK=(-v /dev/null:/repo/.env:ro)
+# Warp kernel 缓存放宿主机，续训/重试不用每次重编。挂到独立的 /warp-cache 并用 WARP_CACHE_PATH 指过去：
+# 不能挂在 /tmp/.cache/ 下面——docker 会以 root 创建中间目录 /tmp/.cache，容器里的用户就写不了
+# /tmp/.cache/wandb（W&B 上传 artifact 时 PermissionError，训练在第一个 checkpoint 崩溃；ml40 自测抓到）。
+WARP_CACHE="$HOME/.cache/flash_chord/warp"; mkdir -p "$WARP_CACHE"
+exec docker run "${RUNMODE[@]}" "${NAME[@]}" "${GPU[@]}" "${ENVS[@]}" --network host --user "$(id -u):$(id -g)" \
+  -e HOME=/tmp -e "USER=$U" -e NVIDIA_DRIVER_CAPABILITIES=all -e MUJOCO_GL=egl -e PYOPENGL_PLATFORM=egl \
+  -v "$ASSETS:/v2d/assets:ro" -v "$FC:/workspace" -v "$ROOT:/repo" "${MASK[@]}" -v "$WARP_CACHE:/warp-cache" -e WARP_CACHE_PATH=/warp-cache \
+  -v "$ID/passwd:/etc/passwd:ro" -v "$ID/group:/etc/group:ro" \
+  -w /workspace --entrypoint /bin/bash flash_chord:latest -lc "$*"

@@ -1,0 +1,8 @@
+# Tier 2 全失败的 ep4、28、1、9、2、11、17 冒烟密存档：变体 A seed 42（mf4090，buffer 400 万），冒烟每 409600 步存一份 checkpoint；正式训练用停链标记挡住，段 t2mrp 的候选导出（计划 agent-doc/plan-t2rp-2026-10-19.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	4	t2-ep4-w2048-cap4m-r3a-sd-mf4090	349999104
+2	28	t2-ep28-w2048-cap4m-r3a-sd-mf4090	349999104
+2	1	t2-ep1-w2048-cap4m-r3a-sd-mf4090	349999104
+2	9	t2-ep9-w2048-cap4m-r3a-sd-mf4090	349999104
+2	2	t2-ep2-w2048-cap4m-r3a-sd-mf4090	349999104
+2	11	t2-ep11-w2048-cap4m-r3a-sd-mf4090	349999104
+2	17	t2-ep17-w2048-cap4m-r3a-sd-mf4090	349999104

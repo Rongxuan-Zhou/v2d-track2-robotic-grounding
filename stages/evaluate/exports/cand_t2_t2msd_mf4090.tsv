@@ -1,0 +1,2 @@
+# Tier 2 ep25 冒烟密存档：变体 A seed 42（mf4090，buffer 400 万），冒烟每 409600 步存一份 checkpoint；正式训练用停链标记挡住，段 t2msd 的候选导出（计划 agent-doc/plan-t2sd-2026-10-19.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	25	t2-ep25-w2048-cap4m-r3a-sd-mf4090	349999104

@@ -1,0 +1,4 @@
+# Tier 3 动力学修复版试点：ep15、ep3、ep16 的参考换成 best_dyn4（mf4090，配置照抄 best_hm 那批：变体 A seed 42、buffer 400 万、支撑面按 best_hm），段 t3pdyn 的候选导出（计划 agent-doc/plan-t3dyn-pilot-2026-10-14.md）：档位 episode run 步数。make_copy_queue.py 生成，不要手改。
+3	15	t3-ep15-w2048-cap4m-r3a-dyn4-mf4090	349999104
+3	3	t3-ep3-w2048-cap4m-r3a-dyn4-mf4090	349999104
+3	16	t3-ep16-w2048-cap4m-r3a-dyn4-mf4090	349999104

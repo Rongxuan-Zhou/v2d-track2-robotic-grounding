@@ -1,0 +1,4 @@
+# ml40（L40S）Day 1：先满配冒烟，判据见 agent-doc/plan-training-launch-2026-09-28.md；通过后再追加 ep20 全程
+V2D_WANDB_TAG=smoke V2D_GPU_SAMPLE_MS=200 V2D_GPU_APPS=1 V2D_MAX_RETRY=0 TF_CPP_MIN_LOG_LEVEL=0 smoke-t1-ep20-w2048-cap10m-ml40 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-06-08_16-57-34_rice_cooker_clockwise_04/robot_name=g1/data.parquet 2048 4096000
+# 冒烟 2026-09-28 通过（整卡峰值 40,273 MiB ≤ 44,000；稳态 50,580 步/秒）→ 满配 1000 万 buffer，不偏离配方
+V2D_WANDB_TAG=tier1 t1-ep20-w2048-cap10m-ml40 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-06-08_16-57-34_rice_cooker_clockwise_04/robot_name=g1/data.parquet 2048 349999104

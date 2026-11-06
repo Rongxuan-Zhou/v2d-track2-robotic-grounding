@@ -1,0 +1,2 @@
+# ml40（L40S）Day 1b 冒烟：存储迁移后训练路径第一次在新存储上跑；W&B 记到 v2d-selftest；判据见 agent-doc/plan-day1b-2026-09-27.md
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 smoke-snackbox-w2048-cap10m-ml40 /v2d/assets/human_motion_data/whole_body/soma/sequence_id=2026-03-06_10-24-18_snack_box_pick_and_place_01/robot_name=g1/data.parquet 2048 4096000

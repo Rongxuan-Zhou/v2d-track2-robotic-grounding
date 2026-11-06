@@ -1,0 +1,3 @@
+# Tier 1 跟丢的集：基础配方把手掌位置终止从 0.15 收到 0.08 m（pt08，不加变体 A）seed 42，ml40，buffer 1000 万；配方取 10/9 清单里同集的 run，段 t1hp 的候选导出（计划 agent-doc/plan-t1hard-2026-10-31.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	25	t1-ep25-w2048-cap10m-pt08-ml40	349999104
+1	9	t1-ep9-w2048-cap10m-pt08-ml40	349999104

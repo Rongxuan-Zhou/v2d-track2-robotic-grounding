@@ -1,0 +1,5 @@
+# 兼容性验证清单（ml40）：核这台的 8c778f9 副本与 1000 万 buffer 训出的 checkpoint（L40S）。计划 agent-doc/plan-box6-and-eval-runtime-2026-10-01.md 第 3.3 节。
+# tab 分隔：类型 run 步数 世界数（stages/evaluate/compat_8c778f9.sh）。两条都只有地面。export 行全部导出成功才开方盒训练（门槛）。
+export	t1-ep12-w2048-cap10m-ml40	349999104	1
+export	t2-ep0-w2048-cap10m-ml40	349999104	1
+eval	t1-ep12-w2048-cap10m-ml40	349999104	4096

@@ -1,0 +1,10 @@
+# Day 2 ml40 开跑前的预检（stages/evaluate/day2_eval_chain.sh - <本表>）：恒等覆盖核对、ep20 两条满配的交叉评测、B 的对照
+identity	t1-ep20-w2048-cap10m-rt-ml40	349999104
+xeval	t1-ep20-w2048-cap10m-ml40	349999104	real	553	0.002	0.005
+xeval	t1-ep20-w2048-cap10m-rt-ml40	349999104	frame	553	0.002	0.005
+eval	t1-ep20-w2048-cap10m-rt-ml40	330012672	real	553
+eval	t1-ep20-w2048-cap10m-rt-ml40	340013056	real	553
+eval	t1-ep20-w2048-cap10m-rt-ml40	349999104	real	553
+eval	t1-ep20-w2048-cap10m-ml40	330012672	frame	553
+eval	t1-ep20-w2048-cap10m-ml40	340013056	frame	553
+eval	t1-ep20-w2048-cap10m-ml40	349999104	frame	553

@@ -1,0 +1,547 @@
+# V2D 非有限防护补丁（不是上游的提交）：打在“FlashCHORD v0.4.0（33129dd）+ #185 补丁”之上（先打 flash_chord-v0.4.0-cube-support-scale-8c778f9.patch），
+# 生成训练用的源码副本 fc_src/v040_p185_nfg（stages/policy/make_patched_fc_src.sh 的第二个补丁参数）。只用于训练；评测与导出仍用与上游 8c778f9 逐字节相同的副本。
+# 改三个上游文件、加一个新文件：
+#   lifecycle/termination.py：ReconBody 终止判定里，世界内任一刚体位姿非有限或平移超过 1e3 m，就按骨盆失败终止（不受冻结期屏蔽），骨盆位置误差写哨兵 -1、其余误差写 0；
+#   envs/base.py：重置时，被重置世界的 mjw_data.qacc_warmstart（与 act，若有）那一行只要有非有限值就整行清零；
+#   training/flash_sac/nonfinite_guard.py（新文件）与 runner.py：consume_transition 之前单独 jit 的清洗函数，坏的世界步换成一条普通失败样本（重置后的观测与上下文只在它们自己非有限时才换），哨兵值计数后清零，计数、停止条件，事件行与停训行带固定前缀 NONFINITE_GUARD_EVENT / NONFINITE_GUARD_STOP；
+# 没有事件时三处都不改变任何数值（由 V2D 仓库 stages/policy/ 下的组件测试逐位核对）。设计与闸：V2D 仓库 agent-doc/plan-ep7-eval-and-guards-2026-10-02.md 的 B 部分。
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/envs/base.py b/robotic_grounding/flash_chord/src/flash_chord/envs/base.py
+index b4648d1..18f5da4 100644
+--- a/robotic_grounding/flash_chord/src/flash_chord/envs/base.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/envs/base.py
+@@ -87,6 +87,40 @@ def reset_env_state(
+     truncated[world] = 0
+ 
+ 
++@wp.kernel
++def clear_nonfinite_solver_rows(
++    reset_mask: wp.array(dtype=wp.int32),
++    values: wp.array2d(dtype=wp.float32),
++) -> None:
++    """V2D non-finite guard: zero a reset world's solver row when any entry of it is non-finite."""
++    world = wp.tid()
++    if reset_mask[world] == 0:
++        return
++    bad = int(0)  # noqa: UP018,RUF046 - Warp requires explicitly typed mutable locals.
++    for column in range(values.shape[1]):
++        if not wp.isfinite(values[world, column]):
++            bad = 1
++    if bad != 0:
++        for column in range(values.shape[1]):
++            values[world, column] = 0.0
++
++
++def _solver_rows_to_clear(solver, world_count: int) -> tuple[wp.array, ...]:
++    """MuJoCo-Warp state that survives a Newton reset: the warm-start acceleration and, when present, activations."""
++    data = getattr(solver, "mjw_data", None)
++    if data is None:
++        return ()
++    rows = []
++    for name in ("qacc_warmstart", "act"):
++        values = getattr(data, name, None)
++        if values is None or values.ndim != 2 or values.shape[1] == 0:
++            continue
++        if values.shape[0] != world_count:
++            raise ValueError(f"mjw_data.{name} has {values.shape[0]} worlds; expected {world_count}")
++        rows.append(values)
++    return tuple(rows)
++
++
+ class BaseEnv:
+     """World-parallel physics, control, reference, termination, and reset state."""
+ 
+@@ -268,6 +302,10 @@ class BaseEnv:
+             finger_scale=finger_scale,
+             reference_joint_q_offset=self.reference_joint_q_offset,
+         )
++        # V2D non-finite guard: a NaN warm start would turn the freshly reset world back into NaN on the next
++        # solve, because Newton rewrites positions and velocities only (third_party/patches/flash_chord-v0.4.0-nonfinite-guard.patch).
++        for values in _solver_rows_to_clear(self.solver, self.world_count):
++            wp.launch(clear_nonfinite_solver_rows, dim=self.world_count, inputs=[reset_mask], outputs=[values])
+         self.action.reset(reset_mask)
+         if self.arm_position_integral is not None:
+             self.arm_position_integral.reset(reset_mask)
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/lifecycle/termination.py b/robotic_grounding/flash_chord/src/flash_chord/lifecycle/termination.py
+index f95f2d2..df6c6aa 100644
+--- a/robotic_grounding/flash_chord/src/flash_chord/lifecycle/termination.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/lifecycle/termination.py
+@@ -645,28 +645,70 @@ def evaluate_recon_body_termination(
+             or max_object_orientation_error > object_orientation_threshold
+         )
+ 
+-    pelvis_done[world] = pelvis_failed
+-    palm_done[world] = palm_failed
+-    object_done[world] = object_failed
+-    terminated[world] = wp.max(pelvis_failed, wp.max(palm_failed, object_failed))
++    # V2D non-finite guard (third_party/patches/flash_chord-v0.4.0-nonfinite-guard.patch in the V2D repo):
++    # a world whose rigid bodies hold any non-finite pose component, or a translation beyond 1e3 m, is
++    # terminated as a pelvis failure regardless of the reset freeze. NaN never trips the threshold comparisons
++    # above (fmin/fmax and normalize swallow it), so this check is the only reliable one. The pelvis position
++    # error of such a world is written as the sentinel -1 and every other error as 0, so the logged sums stay
++    # finite and the learner can tell environment-flagged worlds apart. Without a non-finite body every output
++    # below equals the upstream value.
++    nonfinite = int(0)  # noqa: UP018,RUF046 - Warp requires explicitly typed mutable locals.
++    for body in range(bodies_per_world):
++        guard_xf = body_q[body_base + body]
++        guard_p = wp.transform_get_translation(guard_xf)
++        if not (wp.isfinite(guard_p) and wp.isfinite(wp.transform_get_rotation(guard_xf))):
++            nonfinite = 1
++        elif wp.abs(guard_p[0]) > 1.0e3 or wp.abs(guard_p[1]) > 1.0e3 or wp.abs(guard_p[2]) > 1.0e3:
++            nonfinite = 1
++    for object_id in range(num_objects):
++        guard_xf = body_q[object_body_ids_w[world * num_objects + object_id]]
++        guard_p = wp.transform_get_translation(guard_xf)
++        if not (wp.isfinite(guard_p) and wp.isfinite(wp.transform_get_rotation(guard_xf))):
++            nonfinite = 1
++        elif wp.abs(guard_p[0]) > 1.0e3 or wp.abs(guard_p[1]) > 1.0e3 or wp.abs(guard_p[2]) > 1.0e3:
++            nonfinite = 1
++    out_pelvis_failed = int(pelvis_failed)  # noqa: UP018,RUF046
++    out_palm_failed = int(palm_failed)  # noqa: UP018,RUF046
++    out_object_failed = int(object_failed)  # noqa: UP018,RUF046
++    out_pelvis_position_error = float(pelvis_position_error)  # noqa: UP018
++    out_pelvis_orientation_error = float(pelvis_orientation_error)  # noqa: UP018
++    out_palm_position_error = float(max_palm_position_error)  # noqa: UP018
++    out_palm_orientation_error = float(max_palm_orientation_error)  # noqa: UP018
++    out_object_position_error = float(max_object_position_error)  # noqa: UP018
++    out_object_orientation_error = float(max_object_orientation_error)  # noqa: UP018
++    if nonfinite != 0:
++        out_pelvis_failed = 1
++        out_palm_failed = 0
++        out_object_failed = 0
++        out_pelvis_position_error = -1.0
++        out_pelvis_orientation_error = 0.0
++        out_palm_position_error = 0.0
++        out_palm_orientation_error = 0.0
++        out_object_position_error = 0.0
++        out_object_orientation_error = 0.0
++
++    pelvis_done[world] = out_pelvis_failed
++    palm_done[world] = out_palm_failed
++    object_done[world] = out_object_failed
++    terminated[world] = wp.max(out_pelvis_failed, wp.max(out_palm_failed, out_object_failed))
+     truncated[world] = int(truncate_at_reference_end != 0 and timestep[world] >= num_frames - 1)
+ 
+-    pelvis_position_error_out[world] = pelvis_position_error
+-    pelvis_orientation_error_out[world] = pelvis_orientation_error
+-    palm_position_error_out[world] = max_palm_position_error
+-    palm_orientation_error_out[world] = max_palm_orientation_error
+-    object_position_error_out[world] = max_object_position_error
+-    object_orientation_error_out[world] = max_object_orientation_error
++    pelvis_position_error_out[world] = out_pelvis_position_error
++    pelvis_orientation_error_out[world] = out_pelvis_orientation_error
++    palm_position_error_out[world] = out_palm_position_error
++    palm_orientation_error_out[world] = out_palm_orientation_error
++    object_position_error_out[world] = out_object_position_error
++    object_orientation_error_out[world] = out_object_orientation_error
+     base = world * 9
+-    packed_diagnostics[base] = float(pelvis_failed)
+-    packed_diagnostics[base + 1] = float(palm_failed)
+-    packed_diagnostics[base + 2] = float(object_failed)
+-    packed_diagnostics[base + 3] = pelvis_position_error
+-    packed_diagnostics[base + 4] = pelvis_orientation_error
+-    packed_diagnostics[base + 5] = max_palm_position_error
+-    packed_diagnostics[base + 6] = max_palm_orientation_error
+-    packed_diagnostics[base + 7] = max_object_position_error
+-    packed_diagnostics[base + 8] = max_object_orientation_error
++    packed_diagnostics[base] = float(out_pelvis_failed)
++    packed_diagnostics[base + 1] = float(out_palm_failed)
++    packed_diagnostics[base + 2] = float(out_object_failed)
++    packed_diagnostics[base + 3] = out_pelvis_position_error
++    packed_diagnostics[base + 4] = out_pelvis_orientation_error
++    packed_diagnostics[base + 5] = out_palm_position_error
++    packed_diagnostics[base + 6] = out_palm_orientation_error
++    packed_diagnostics[base + 7] = out_object_position_error
++    packed_diagnostics[base + 8] = out_object_orientation_error
+ 
+ 
+ @dataclass
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/nonfinite_guard.py b/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/nonfinite_guard.py
+new file mode 100644
+index 0000000..f141be5
+--- /dev/null
++++ b/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/nonfinite_guard.py
+@@ -0,0 +1,270 @@
++# SPDX-License-Identifier: Apache-2.0
++"""V2D non-finite guard for FlashSAC collection (not part of upstream FlashCHORD).
++
++Added by the V2D repository's third_party/patches/flash_chord-v0.4.0-nonfinite-guard.patch; design and gates in its
++agent-doc/plan-ep7-eval-and-guards-2026-10-02.md, part B.
++
++A simulator world can turn non-finite, or grow observations that overflow the fp16 replay storage. Upstream FlashSAC
++has no filter for this: a single such world-step poisons the reward normalizer, the replay buffer and the BatchNorm
++statistics for the rest of the run. `make_transition_sanitizer` builds a separately jitted function that runs before
++`consume_transition`, so the learner's compiled program is unchanged. When no world is bad, every array it returns
++equals its input bit for bit (only `jnp.where` with an all-false mask touches the data).
++
++A world-step is bad when the environment flagged it (termination writes the pelvis-position-error sentinel -1 for a
++world with a non-finite or far-away body, see lifecycle/termination.py), or when any of its objective terms, action,
++next or post-reset observation or critic context is non-finite, or an observation overflows the replay storage dtype.
++For a bad world-step the transition becomes an ordinary failure sample: objective terms are (termination=1, others 0),
++`terminated` is set, the termination cause is pelvis, and non-finite actions become 0. Each of the four observation and
++context arrays is replaced by the learner's current observation or context only where that array itself is non-finite
++(or overflows the storage dtype): an environment-flagged world has already been reset by the environment, so its
++post-reset observation is the new episode's first observation and is kept. A world that only the learner flags is not
++reset by the environment; its replaced post-reset observation lags the simulator by one step and its `terminated`
++adds one completed episode to the learner's logging. The sentinel is counted and then cleared to 0, so it never
++reaches the tracking-error metrics.
++
++Counters are kept outside the learner state, so they are not checkpointed (a resumed run starts them from 0). They are
++reported once per logging window: the runner prints an `EVENT_PREFIX` line for a window with events and a `STOP_PREFIX`
++line before it stops training because the guard keeps firing.
++"""
++
++from __future__ import annotations
++
++import math
++from dataclasses import dataclass
++
++import flax
++import jax
++import jax.numpy as jnp
++
++ENV_FLAG_PELVIS_ERROR = -1.0
++STOP_LEARNER_ONLY_TOTAL = 100
++STOP_CONSECUTIVE = 3
++EVENT_PREFIX = "NONFINITE_GUARD_EVENT"
++STOP_PREFIX = "NONFINITE_GUARD_STOP"
++
++
++@flax.struct.dataclass
++class GuardState:
++    """Device-resident guard counters; window fields are cleared after each logging window."""
++
++    consecutive: jax.Array
++    env_flagged: jax.Array
++    learner_only: jax.Array
++    learner_only_total: jax.Array
++    max_consecutive: jax.Array
++    phase_min: jax.Array
++    phase_max: jax.Array
++    first_world: jax.Array
++
++
++@dataclass(frozen=True)
++class GuardLayout:
++    """Static indices the sanitizer needs; resolved once from the environment and training config."""
++
++    storage_dtype: str
++    termination_term: int
++    objective_term_count: int
++    cause_count: int
++    pelvis_cause: int
++    pelvis_error_column: int
++    phase_index: int
++
++
++def create_guard_state(world_count: int, device: jax.Device | None = None) -> GuardState:
++    def put(value):
++        return value if device is None else jax.device_put(value, device)
++
++    return GuardState(
++        consecutive=put(jnp.zeros((world_count,), dtype=jnp.int32)),
++        env_flagged=put(jnp.asarray(0, dtype=jnp.int32)),
++        learner_only=put(jnp.asarray(0, dtype=jnp.int32)),
++        learner_only_total=put(jnp.asarray(0, dtype=jnp.int32)),
++        max_consecutive=put(jnp.asarray(0, dtype=jnp.int32)),
++        phase_min=put(jnp.asarray(jnp.inf, dtype=jnp.float32)),
++        phase_max=put(jnp.asarray(-jnp.inf, dtype=jnp.float32)),
++        first_world=put(jnp.asarray(-1, dtype=jnp.int32)),
++    )
++
++
++def guard_layout(
++    *,
++    storage_dtype: str,
++    objective_term_names: tuple[str, ...],
++    termination_cause_names: tuple[str, ...],
++    tracking_error_names: tuple[str, ...],
++    critic_context_names: tuple[str, ...],
++) -> GuardLayout:
++    """Resolve the column indices by name; a missing name is recorded as -1.
++
++    Without a "termination" objective term a bad world-step gets all-zero objective terms; without a "pelvis" cause
++    the first cause is marked instead (no cause at all leaves the causes alone); without a pelvis position error
++    column no world can be environment-flagged. The ReconBody recipe has all of them.
++    """
++    names = tuple(objective_term_names)
++    causes = tuple(termination_cause_names)
++    errors = tuple(tracking_error_names)
++    context = tuple(critic_context_names)
++    pelvis_cause = causes.index("pelvis") if "pelvis" in causes else (0 if causes else -1)
++    return GuardLayout(
++        storage_dtype=str(jnp.dtype(storage_dtype)),
++        termination_term=names.index("termination") if "termination" in names else -1,
++        objective_term_count=len(names),
++        cause_count=len(causes),
++        pelvis_cause=pelvis_cause,
++        pelvis_error_column=(
++            len(causes) + errors.index("pelvis_position_m") if "pelvis" in causes and "pelvis_position_m" in errors else -1
++        ),
++        phase_index=context.index("normalized_reference_phase") if "normalized_reference_phase" in context else -1,
++    )
++
++
++def _rows_finite(values: jax.Array) -> jax.Array:
++    return jnp.all(jnp.isfinite(values), axis=-1)
++
++
++def make_transition_sanitizer(layout: GuardLayout):
++    """Return a jitted `(transition, observation, critic_context, state) -> (transition, state)` function."""
++    storage_dtype = jnp.dtype(layout.storage_dtype)
++    termination_row = jnp.zeros((layout.objective_term_count,), dtype=jnp.float32)
++    if layout.termination_term >= 0:
++        termination_row = termination_row.at[layout.termination_term].set(1.0)
++
++    def observation_ok(values: jax.Array) -> jax.Array:
++        stored = values.astype(storage_dtype)
++        return _rows_finite(values) & _rows_finite(stored)
++
++    def sanitize(transition, observation, critic_context, state: GuardState):
++        diagnostics = transition.termination_diagnostics
++        if layout.pelvis_error_column >= 0:
++            env_flagged = (diagnostics[:, layout.pelvis_cause] == 1.0) & (
++                diagnostics[:, layout.pelvis_error_column] == ENV_FLAG_PELVIS_ERROR
++            )
++        else:
++            env_flagged = jnp.zeros(transition.terminated.shape, dtype=jnp.bool_)
++        next_observation_bad = ~observation_ok(transition.next_observation)
++        post_observation_bad = ~observation_ok(transition.post_reset_observation)
++        next_context_bad = ~_rows_finite(transition.next_critic_context)
++        post_context_bad = ~_rows_finite(transition.post_reset_critic_context)
++        terms_bad = ~_rows_finite(transition.objective_terms)
++        action_bad = ~_rows_finite(transition.action)
++        bad = (
++            env_flagged
++            | next_observation_bad
++            | post_observation_bad
++            | next_context_bad
++            | post_context_bad
++            | terms_bad
++            | action_bad
++        )
++
++        causes = diagnostics[:, : layout.cause_count]
++        if layout.pelvis_cause >= 0:
++            causes = causes.at[:, layout.pelvis_cause].set(jnp.where(bad, 1.0, causes[:, layout.pelvis_cause]))
++        tracking = diagnostics[:, layout.cause_count :]
++        tracking = jnp.where(jnp.isfinite(tracking), tracking, 0.0)
++        if layout.pelvis_error_column >= 0:
++            column = layout.pelvis_error_column - layout.cause_count
++            tracking = tracking.at[:, column].set(jnp.where(env_flagged, 0.0, tracking[:, column]))
++        sanitized = transition.replace(
++            action=jnp.where(bad[:, None] & ~jnp.isfinite(transition.action), 0.0, transition.action),
++            objective_terms=jnp.where(bad[:, None], termination_row[None, :], transition.objective_terms),
++            terminated=jnp.where(bad, jnp.ones_like(transition.terminated), transition.terminated),
++            episode_reference_progress=jnp.where(
++                jnp.isfinite(transition.episode_reference_progress), transition.episode_reference_progress, 0.0
++            ),
++            termination_diagnostics=jnp.concatenate([causes, tracking], axis=1),
++            next_observation=jnp.where(next_observation_bad[:, None], observation, transition.next_observation),
++            next_critic_context=jnp.where(next_context_bad[:, None], critic_context, transition.next_critic_context),
++            post_reset_observation=jnp.where(
++                post_observation_bad[:, None], observation, transition.post_reset_observation
++            ),
++            post_reset_critic_context=jnp.where(
++                post_context_bad[:, None], critic_context, transition.post_reset_critic_context
++            ),
++        )
++
++        consecutive = jnp.where(bad, state.consecutive + 1, 0)
++        learner_only = jnp.sum(bad & ~env_flagged, dtype=jnp.int32)
++        if layout.phase_index >= 0:
++            # The terminal context's phase comes from the integer reference timestep, so it is finite even for a NaN world.
++            phase = transition.next_critic_context[:, layout.phase_index]
++            phase = jnp.where(jnp.isfinite(phase), phase, critic_context[:, layout.phase_index])
++            phase_min = jnp.minimum(state.phase_min, jnp.min(jnp.where(bad, phase, jnp.inf)))
++            phase_max = jnp.maximum(state.phase_max, jnp.max(jnp.where(bad, phase, -jnp.inf)))
++        else:
++            phase_min, phase_max = state.phase_min, state.phase_max
++        first_world = jnp.where(
++            (state.first_world < 0) & jnp.any(bad), jnp.argmax(bad).astype(jnp.int32), state.first_world
++        )
++        state = state.replace(
++            consecutive=consecutive,
++            env_flagged=state.env_flagged + jnp.sum(env_flagged, dtype=jnp.int32),
++            learner_only=state.learner_only + learner_only,
++            learner_only_total=state.learner_only_total + learner_only,
++            max_consecutive=jnp.maximum(state.max_consecutive, jnp.max(consecutive)),
++            phase_min=phase_min,
++            phase_max=phase_max,
++            first_world=first_world,
++        )
++        return sanitized, state
++
++    return jax.jit(sanitize)
++
++
++def window_report(state: GuardState) -> tuple[dict[str, float], str | None]:
++    """Host-side window metrics and, when a registered stop condition holds, the reason to stop."""
++    host = jax.device_get(state)
++    env_flagged = int(host.env_flagged)
++    learner_only = int(host.learner_only)
++    phase_min = float(host.phase_min)
++    phase_max = float(host.phase_max)
++    metrics = {
++        "guard/env_flagged_world_steps": float(env_flagged),
++        "guard/learner_only_world_steps": float(learner_only),
++        "guard/learner_only_world_steps_total": float(int(host.learner_only_total)),
++        "guard/max_consecutive_bad_steps": float(int(host.max_consecutive)),
++        "guard/event_phase_min": phase_min if math.isfinite(phase_min) else -1.0,
++        "guard/event_phase_max": phase_max if math.isfinite(phase_max) else -1.0,
++        "guard/first_bad_world": float(int(host.first_world)),
++    }
++    reason = None
++    if int(host.learner_only_total) > STOP_LEARNER_ONLY_TOTAL:
++        reason = f"learner-only bad world-steps reached {int(host.learner_only_total)} (> {STOP_LEARNER_ONLY_TOTAL})"
++    elif int(host.max_consecutive) >= STOP_CONSECUTIVE:
++        reason = f"a world stayed bad for {int(host.max_consecutive)} consecutive steps (>= {STOP_CONSECUTIVE})"
++    return metrics, reason
++
++
++def event_line(environment_steps: int, metrics: dict[str, float]) -> str:
++    """One greppable host-log line for a logging window that had bad world-steps."""
++    return (
++        f"{EVENT_PREFIX} environment_steps={environment_steps}"
++        f" env_flagged={int(metrics['guard/env_flagged_world_steps'])}"
++        f" learner_only={int(metrics['guard/learner_only_world_steps'])}"
++        f" learner_only_total={int(metrics['guard/learner_only_world_steps_total'])}"
++        f" phase_min={metrics['guard/event_phase_min']:.4f} phase_max={metrics['guard/event_phase_max']:.4f}"
++        f" first_world={int(metrics['guard/first_bad_world'])}"
++        f" longest_streak={int(metrics['guard/max_consecutive_bad_steps'])}"
++    )
++
++
++def stop_line(environment_steps: int, metrics: dict[str, float], reason: str) -> str:
++    """The host-log line printed right before the runner stops training."""
++    return (
++        f"{STOP_PREFIX} environment_steps={environment_steps}"
++        f" learner_only_total={int(metrics['guard/learner_only_world_steps_total'])}"
++        f" longest_streak={int(metrics['guard/max_consecutive_bad_steps'])}"
++        f" first_world={int(metrics['guard/first_bad_world'])} reason={reason!r}"
++    )
++
++
++def reset_window(state: GuardState) -> GuardState:
++    """Clear the logging-window fields; per-world streaks and the run total carry over."""
++    return state.replace(
++        env_flagged=jnp.zeros_like(state.env_flagged),
++        learner_only=jnp.zeros_like(state.learner_only),
++        max_consecutive=jnp.zeros_like(state.max_consecutive),
++        phase_min=jnp.full_like(state.phase_min, jnp.inf),
++        phase_max=jnp.full_like(state.phase_max, -jnp.inf),
++        first_world=jnp.full_like(state.first_world, -1),
++    )
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/runner.py b/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/runner.py
+index 2a04513..1749b3c 100644
+--- a/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/runner.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/runner.py
+@@ -40,6 +40,15 @@ from flash_chord.training.flash_sac.learner import (
+     create_learner,
+     reset_context_indices,
+ )
++from flash_chord.training.flash_sac.nonfinite_guard import (
++    create_guard_state,
++    event_line,
++    guard_layout,
++    make_transition_sanitizer,
++    reset_window,
++    stop_line,
++    window_report,
++)
+ from flash_chord.training.progress import TrainingProgress
+ 
+ _DEVICE_PATTERN = re.compile(r"^(cuda|gpu|cpu)(?::([0-9]+))?$")
+@@ -526,6 +535,17 @@ def _run_training(
+         learner.key,
+     )
+     learner = learner.replace(exploration=exploration, key=key)
++    # V2D non-finite guard (flash_sac/nonfinite_guard.py): sanitize each transition before consume_transition.
++    sanitize_transition = make_transition_sanitizer(
++        guard_layout(
++            storage_dtype=config.replay.observation_storage_dtype,
++            objective_term_names=tuple(env.objective_term_names),
++            termination_cause_names=tuple(env.termination_cause_names),
++            tracking_error_names=tuple(env.tracking_error_names),
++            critic_context_names=context_names,
++        )
++    )
++    guard = create_guard_state(config.world_count, jax_device)
+ 
+     checkpoint_dir = None if checkpoint_dir is None else Path(checkpoint_dir)
+     checkpoint_interval = config.checkpoint.save_interval_environment_steps
+@@ -563,8 +583,7 @@ def _run_training(
+         if step.terminal_observation is None or step.critic_context is None or step.terminal_critic_context is None:
+             raise RuntimeError("environment stopped publishing terminal-state outputs")
+         episode_reference_progress, termination_diagnostics = env.transition_logging_inputs()
+-        learner, action, learner_metrics = executables.consume_transition(
+-            learner,
++        transition, guard = sanitize_transition(
+             Transition(
+                 action=action,
+                 objective_terms=step.objective_terms,
+@@ -577,6 +596,13 @@ def _run_training(
+                 post_reset_observation=step.observation,
+                 post_reset_critic_context=step.critic_context,
+             ),
++            learner.observation,
++            learner.critic_context,
++            guard,
++        )
++        learner, action, learner_metrics = executables.consume_transition(
++            learner,
++            transition,
+             objective_weights,
+             frame_dt,
+             target_voc_scale,
+@@ -589,26 +615,38 @@ def _run_training(
+         if progress is not None:
+             progress.update(environment_steps)
+ 
++        guard_metrics, guard_stop = {}, None
++        if logging_boundary:
++            guard_metrics, guard_stop = window_report(guard)
++            guard = reset_window(guard)
++            if guard_metrics["guard/env_flagged_world_steps"] or guard_metrics["guard/learner_only_world_steps"]:
++                print(event_line(environment_steps, guard_metrics), flush=True)
+         if logger is not None and logging_boundary:
+             jax.block_until_ready(learner_metrics.critic_loss_mean_per_update)
+             logger.log(
+-                metrics_to_host(
+-                    learner_metrics,
+-                    elapsed_seconds=time.perf_counter() - log_start,
+-                    environment_steps_since_log=steps_since_log,
+-                    stage_index=current_stage_index,
+-                    stage=current_stage,
+-                    replay_capacity=config.replay.capacity,
+-                    objective_term_names=env.objective_term_names,
+-                    termination_cause_names=env.termination_cause_names,
+-                    tracking_error_names=env.tracking_error_names,
+-                    reset_to_first_frame_probability=env.reset_to_first_frame_probability,
+-                    immediate_first_frame_probability=getattr(env, "immediate_first_frame_probability", None),
+-                ),
++                {
++                    **metrics_to_host(
++                        learner_metrics,
++                        elapsed_seconds=time.perf_counter() - log_start,
++                        environment_steps_since_log=steps_since_log,
++                        stage_index=current_stage_index,
++                        stage=current_stage,
++                        replay_capacity=config.replay.capacity,
++                        objective_term_names=env.objective_term_names,
++                        termination_cause_names=env.termination_cause_names,
++                        tracking_error_names=env.tracking_error_names,
++                        reset_to_first_frame_probability=env.reset_to_first_frame_probability,
++                        immediate_first_frame_probability=getattr(env, "immediate_first_frame_probability", None),
++                    ),
++                    **guard_metrics,
++                },
+                 step=environment_steps,
+             )
+             log_start = time.perf_counter()
+             steps_since_log = 0
++        if guard_stop is not None:
++            print(stop_line(environment_steps, guard_metrics, guard_stop), flush=True)
++            raise RuntimeError(f"nonfinite_guard stopped training at {environment_steps} environment steps: {guard_stop}")
+ 
+         should_save = checkpoint_dir is not None and (
+             environment_steps >= next_checkpoint or environment_steps == config.total_environment_steps

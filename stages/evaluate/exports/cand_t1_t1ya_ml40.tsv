@@ -1,0 +1,7 @@
+# Tier 1 补候选：几乎每个世界都摔的 6 条（不含方盒）的变体 A seed 42（ml40，buffer 1000 万，基线取 10/9 逐条选的清单），段 t1ya 的候选导出（计划 agent-doc/plan-next-training-2026-10-12.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	2	t1-ep2-w2048-cap10m-r3a-ml40	349999104
+1	11	t1-ep11-w2048-cap10m-r3a-ml40	349999104
+1	16	t1-ep16-w2048-cap10m-r3a-ml40	349999104
+1	4	t1-ep4-w2048-cap10m-r3a-ml40	349999104
+1	9	t1-ep9-w2048-cap10m-r3a-ml40	349999104
+1	25	t1-ep25-w2048-cap10m-r3a-ml40	349999104

@@ -1,0 +1,6 @@
+# Tier 2 全失败的 ep25、ep28 训练早期的 checkpoint，段 t2st 的候选导出（计划 agent-doc/plan-t2st-2026-10-19.md）：档位 episode run 步数。
+2	25	smoke-t2-ep25-w2048-cap4m-mf4090	4096000
+2	25	smoke-t2-ep25-w2048-cap4m-r3a-c5-mf4090	4096000
+2	25	t2-ep25-w2048-cap4m-r3a-c5-mf4090	10000384
+2	25	t2-ep25-w2048-cap4m-r3a-c5-mf4090	20000768
+2	28	smoke-t2-ep28-w2048-cap4m-p185-mf4090	4096000

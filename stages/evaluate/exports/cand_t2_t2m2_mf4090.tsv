@@ -1,0 +1,4 @@
+# Tier 2 接触标记提前（参数只由 Tier 2 的数据定）：跟丢的 ep25、9、1 的变体 A seed 42，参考换成 runs/motion/tier2_c5（接触起点提前 5 帧、补 15 帧以内的空档，参考轨迹不变；mf4090，buffer 400 万，基线取 Tier 2 导出清单），段 t2m2 的候选导出（计划 agent-doc/plan-c10-extend-2026-10-16.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	2	t2-ep2-w2048-cap4m-r3a-c5-mf4090	349999104
+2	11	t2-ep11-w2048-cap4m-r3a-c5-mf4090	349999104
+2	17	t2-ep17-w2048-cap4m-r3a-c5-mf4090	349999104

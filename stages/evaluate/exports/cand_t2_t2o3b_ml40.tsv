@@ -1,0 +1,3 @@
+# Tier 2 AUC 榜：同 t2zo 的 4 集，r3o seed 42，ml40，buffer 1000 万（与清单里的 1000 万变体 A 只差物体朝向项），基线取 Tier 2 导出清单，段 t2o3b 的候选导出（计划 agent-doc/plan-t2auc2-2026-11-02.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	26	t2-ep26-w2048-cap10m-r3o-ml40	349999104
+2	21	t2-ep21-w2048-cap10m-r3o-ml40	349999104

@@ -1,0 +1,2 @@
+# Tier 1 追基线：10/12 计划 A 没开的 5 条，SP-SR 失败的 ep3、19、13 排在前面的变体 A seed 42（mf4090，buffer 400 万，基线取 10/9 逐条选的清单），段 t1xb_s45 的候选导出（计划 agent-doc/plan-t1-chase-2026-10-13.md）：档位 episode run 步数。本段改种子：种子 45（reset.seed=45 training.seed=45）。make_var_queue.py 生成，不要手改。
+1	14	t1-ep14-w2048-cap4m-r3a-s45-mf4090	349999104

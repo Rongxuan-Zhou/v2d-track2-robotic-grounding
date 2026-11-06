@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# 只回流小体积产物（results/），不碰 runs/ 里的 checkpoint 和视频。
+# 默认主机回流到 results/；V2D_ENV 指定的其他主机回流到 results/<主机>/，两台同名文件不互相覆盖。
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+. "$ROOT/scripts/dev/_load-env"
+DST="$ROOT/results/${V2D_ENV:+$V2D_HOST_TAG/}"
+mkdir -p "$DST"
+rsync -az "$V2D_HOST:$V2D_REMOTE/results/" "$DST"
+echo "已回流到 ${DST#"$ROOT"/}"

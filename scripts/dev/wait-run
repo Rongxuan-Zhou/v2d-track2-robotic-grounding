@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# 在 Mac 上等训练机上的一条 run 结束（只读，不改远端）：出现 DONE 退出 0，run_record 里出现 abort 退出 3，
+# 超时退出 4。主机与远端路径的来源同 scripts/dev/remote（.env；V2D_ENV=<名字> 再叠加 .env.<名字>）。
+# 用法：V2D_ENV=ml40 scripts/dev/wait-run t1-ep20-w2048-cap10m-ml40
+#       V2D_WAIT_POLL_S（默认 60）、V2D_WAIT_MAX_POLLS（默认 240）
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+. "$ROOT/scripts/dev/_load-env"
+RUN=${1:?用法：wait-run <run>}
+[[ $RUN =~ ^[a-z0-9][a-z0-9_-]{2,59}$ ]] || { echo "wait-run: run 名非法：$RUN" >&2; exit 2; }
+POLL=${V2D_WAIT_POLL_S:-60}; MAX=${V2D_WAIT_MAX_POLLS:-240}
+O="$V2D_REMOTE/runs/flash_chord/$RUN"
+for ((i = 1; i <= MAX; i++)); do
+  r="$(ssh -o BatchMode=yes "$V2D_HOST" "[ -f '$O/DONE' ] && echo DONE; grep -h '\"event\": \"abort\"' '$O/run_record.jsonl' 2>/dev/null | tail -1" 2>/dev/null || true)"
+  case "$r" in
+    DONE*) echo "wait-run: $RUN DONE（第 $i 次查询，$(date '+%F %T %Z')）"; exit 0 ;;
+    *abort*) echo "wait-run: $RUN abort：$r"; exit 3 ;;
+  esac
+  sleep "$POLL"
+done
+echo "wait-run: $RUN 超时（$MAX × ${POLL}s）"; exit 4

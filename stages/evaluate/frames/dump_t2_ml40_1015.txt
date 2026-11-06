@@ -1,0 +1,4 @@
+# r3o 计划第 0 步（agent-doc/plan-r3o-2026-10-15.md 2.3）：Tier 2 b1014 交上去的 3 集（ml40 上的）
+t2-ep1-w2048-cap10m-r3a-ml40 349999104
+t2-ep2-w2048-cap10m-r3a-ml40 349999104
+t2-ep4-w2048-cap10m-r3a-ml40 349999104

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# 从训练机回流训练产物里值得带回来的部分：policy 权重、小的元数据文件、runs/logs 下的文本日志。
+# 不拉 state_*（每份约 160 MB，只用于续训，留在训练机上）。落到 runs/<主机>/，不同主机不互相覆盖。
+#
+# 用法: V2D_ENV=ml40 scripts/dev/pull-runs t1_ep20_w2048_cap10m_ml40 [更多 run 名]
+#       （run 名是 runs/flash_chord/ 下的目录名）
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+. "$ROOT/scripts/dev/_load-env"
+[ $# -ge 1 ] || { echo "用法: scripts/dev/pull-runs <run 名>..." >&2; exit 1; }
+DST="$ROOT/runs/$V2D_HOST_TAG"
+for run in "$@"; do
+  [[ "$run" =~ ^[A-Za-z0-9._=-]+$ && "$run" != *..* ]] || { echo "run 名非法: '$run'" >&2; exit 1; }
+  mkdir -p "$DST/flash_chord/$run"
+  rsync -az -i \
+        --include='policy_*.safetensors' --include='*.json' --include='*.yaml' --include='*.txt' --include='*.md' \
+        --exclude='*' \
+        "$V2D_HOST:$V2D_REMOTE/runs/flash_chord/$run/" "$DST/flash_chord/$run/"
+done
+mkdir -p "$DST/logs"
+rsync -az -i \
+      --include='*.log' --include='*.gpu' --include='*.apps' --include='*.tsv' --include='*.txt' --include='*.json' \
+      --exclude='*' \
+      "$V2D_HOST:$V2D_REMOTE/runs/logs/" "$DST/logs/"
+echo "已回流到 runs/$V2D_HOST_TAG/" >&2

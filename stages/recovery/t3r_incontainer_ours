@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# 第 1b 级 gate 仓库（t3recon/gate_e/repo）里 scripts/dev/incontainer 的替身，由 stages/recovery/t3r_gate_setup.sh 在 T3R_ENV=ours 时装进去。
+# 与她 gate 里的替身做同样的事——不起容器，在 CPU 上直接跑，/repo 开头的参数映射到这个仓库——只是解释器换成我们自己的 gate 环境。
+# 计划 agent-doc/plan-t3takeover-1b-2026-10-21.md 第 1 节第 4 条、复核改动第 1 条。
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+PY=/lab_data/rxzhou/v2d/t3recon/env/gate/bin/python
+args=()
+for a in "$@"; do args+=("${a/#\/repo/$ROOT}"); done
+cd "${V2D_WORKDIR:-$ROOT}"
+export PYTHONPATH="$ROOT/third_party/video_to_data/robotic_grounding/source/robotic_grounding${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONDONTWRITEBYTECODE=1
+exec "$PY" "${args[@]}"

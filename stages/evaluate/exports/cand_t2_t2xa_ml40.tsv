@@ -1,0 +1,16 @@
+# Tier 2 铺开：其余 24 条的变体 A seed 42（ml40，buffer 1000 万，按基线 4096 世界失败:骨盆从低到高），段 t2xa 的候选导出（计划 agent-doc/plan-t2-scaleout-2026-10-09.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	29	t2-ep29-w2048-cap10m-r3a-ml40	349999104
+2	23	t2-ep23-w2048-cap10m-r3a-ml40	349999104
+2	6	t2-ep6-w2048-cap10m-r3a-ml40	349999104
+2	18	t2-ep18-w2048-cap10m-r3a-ml40	349999104
+2	7	t2-ep7-w2048-cap10m-r3a-ml40	349999104
+2	16	t2-ep16-w2048-cap10m-r3a-ml40	349999104
+2	0	t2-ep0-w2048-cap10m-r3a-ml40	349999104
+2	21	t2-ep21-w2048-cap10m-r3a-ml40	349999104
+2	15	t2-ep15-w2048-cap10m-r3a-ml40	349999104
+2	10	t2-ep10-w2048-cap10m-r3a-ml40	349999104
+2	27	t2-ep27-w2048-cap10m-r3a-ml40	349999104
+2	3	t2-ep3-w2048-cap10m-r3a-ml40	349999104
+2	5	t2-ep5-w2048-cap10m-r3a-ml40	349999104
+2	11	t2-ep11-w2048-cap10m-r3a-ml40	349999104
+2	17	t2-ep17-w2048-cap10m-r3a-ml40	349999104

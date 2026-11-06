@@ -1,0 +1,3 @@
+# t3pr3o candidate export (hand-derived; plan agent-doc/plan-t3oo-2026-10-28.md): tier episode run steps
+3	27	t3-ep27-w2048-cap4m-r3o-gb5-ocoff-sg04-mf4090	349999104
+# 10/28 11:4x MDT: the sg20 run was stopped a few minutes into training for plan-t3fix2 and never exported; its row is removed (plan-t3oo execution record)

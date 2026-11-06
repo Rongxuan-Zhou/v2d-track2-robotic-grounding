@@ -1,0 +1,4 @@
+# Tier 3 探路提交的占位（计划 agent-doc/plan-r3o-2026-10-15.md 2.4）：ml40 上 ep9、10、11，400 万步，已训、已评 4096 世界、已导出；过一遍导出链只为写结果表。档位 episode run 步数。
+3	9	t3-ep9-w2048-cap10m-r3a-hm-ph-ml40	4096000
+3	10	t3-ep10-w2048-cap10m-r3a-hm-ph-ml40	4096000
+3	11	t3-ep11-w2048-cap10m-r3a-hm-ph-ml40	4096000

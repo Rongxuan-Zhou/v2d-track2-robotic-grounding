@@ -1,0 +1,2 @@
+# 对照臂 ocoff 的候选导出（手工由 cand_t3_t3qf1_ml40.tsv 派生：只留 ep15，run 名 -gb5-ml40 → -gb5-ocoff-ml40；计划 agent-doc/plan-t3hand-2026-10-27.md 第 3.1 版 P0）：档位 episode run 步数。
+3	15	t3-ep15-w2048-cap10m-r3a-gb5-ocoff-ml40	349999104

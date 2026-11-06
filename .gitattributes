@@ -1,0 +1,4 @@
+# GitHub 折叠这些文件的 diff，也不计入语言统计（ADR-00004 决定第 7 条）
+results/** linguist-generated=true
+stages/policy/queues/** linguist-generated=true
+agent-doc/experiments/*.claims.json linguist-generated=true

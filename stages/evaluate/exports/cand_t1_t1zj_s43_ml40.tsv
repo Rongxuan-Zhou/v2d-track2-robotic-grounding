@@ -1,0 +1,4 @@
+# Tier 1 补候选：ep11（导出那一局 SP 成功、MP 失败）与清单里用 400 万 run、MP-SR 期望偏低的 ep29、14、22，换 buffer 1000 万的变体 A（ml40，同 t1za；10/30 夜按复核起的是 t1zj_s43 --episodes 11,29,14 --seed 43），段 t1zj_s43 的候选导出（计划 agent-doc/plan-t12night-2026-10-30.md）：档位 episode run 步数。本段改种子：种子 43（reset.seed=43 training.seed=43）。make_var_queue.py 生成，不要手改。
+1	11	t1-ep11-w2048-cap10m-r3a-s43-ml40	349999104
+1	29	t1-ep29-w2048-cap10m-r3a-s43-ml40	349999104
+1	14	t1-ep14-w2048-cap10m-r3a-s43-ml40	349999104

@@ -1,0 +1,4 @@
+# 回放速度对照（Day 1b 诊断触发条件 T2，与 Tier 2 无关）ml40 冒烟：ep20、满配、按真实时长回放（921 帧）。计划：agent-doc/plan-playback-2026-09-28.md
+# 两个 palm 校验容差的放宽理由见 queues/mf4090_playback.txt。冒烟也关掉 checkpoint 上传：关掉后 W&B 收尾照样打
+# “wandb: Synced … 0 artifact file(s) …”，smoke_check.sh 的正则照样匹配（results/ml40/day1/wandb_footer_upload_off.txt）
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep20-w2048-cap10m-rt-ml40 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-06-08_16-57-34_rice_cooker_clockwise_04/robot_name=g1/data.parquet 2048 4096000 task.source_frame_playback=false +embodiment.config.frame_position_tolerance=0.002 +embodiment.config.frame_orientation_tolerance=0.005

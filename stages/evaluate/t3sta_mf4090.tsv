@@ -1,0 +1,4 @@
+# t3sta：t3static 站立保底的冒烟第 409600 步（零残差），4096 世界评测（计划 agent-doc/plan-t3static-2026-10-21.md 第 1 节第 4 步）。day2_eval_chain.sh 的附加表：eval run 步数 回放 源帧数。
+eval	smoke-t3-ep16-w2048-cap4m-r3a-st-mf4090	409600	frame	477
+eval	smoke-t3-ep23-w2048-cap4m-r3a-st-mf4090	409600	frame	946
+eval	smoke-t3-ep1-w2048-cap4m-r3a-st-mf4090	409600	frame	747

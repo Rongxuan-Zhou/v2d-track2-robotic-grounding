@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# 经 Mac 把一个 run 的若干 policy checkpoint（和源机上有的 4096 世界评测 JSON）从一台训练机转到另一台。
+# 为什么经 Mac：ml40 的 scp/SFTP 下载会卡住，而训练机之间没有互信（也不许 ssh -A），所以源 → Mac 用 ssh cat，Mac → 目标再用 ssh cat。
+# 三端（源、Mac、目标）sha256 一致才算完成；目标上已有同名文件时只核对、不覆盖（内容不同就报错）。
+# 评测 JSON 在目标上改名为 eval_<步数>_w4096.<源主机名>.json，作逐帧诊断的跨卡参照（stages/evaluate/diag_day1b.sh 按这个名字找）。
+# 目标 run 目录下写一份 COPIED_FROM_<UTC 时间>.json 记来历（不覆盖旧的 COPIED_FROM.json）。
+# 用法（Mac，仓库根）：scripts/dev/relay-run <源 V2D_ENV> <目标 V2D_ENV，默认主机写 default> <run> "<用途>" <步数>...
+#   例：scripts/dev/relay-run ml40 default t1-ep20-w2048-cap10m-rt-ml40 "回放速度对照的诊断" 330012672 340013056 349999104
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+[ $# -ge 5 ] || { sed -n '2,9p' "$0" >&2; exit 2; }
+SRC_ENV=$1; DST_ENV=$2; RUN=$3; PURPOSE=$4; shift 4
+[[ ${RUN} =~ ^[a-z0-9][a-z0-9_-]{2,59}$ ]] || { echo "run 名非法：${RUN}" >&2; exit 2; }
+for s in "$@"; do [[ ${s} =~ ^[0-9]+$ ]] || { echo "步数非法：${s}" >&2; exit 2; }; done
+hostpath() {  # hostpath <V2D_ENV|default> → "主机 远端仓库根 主机标签"
+  ( if [ "$1" = default ]; then unset V2D_ENV; else export V2D_ENV="$1"; fi
+    . "${ROOT}/scripts/dev/_load-env" 2> /dev/null
+    echo "${V2D_HOST} ${V2D_REMOTE} ${V2D_HOST_TAG}" )
+}
+read -r SH SR STAG <<< "$(hostpath "${SRC_ENV}")"
+read -r DH DR _ <<< "$(hostpath "${DST_ENV}")"
+[ -n "${SH}" ] && [ -n "${DH}" ] || { echo "读不到源或目标的主机配置" >&2; exit 2; }
+[ "${SH}" != "${DH}" ] || { echo "源与目标是同一台主机（${SH}）" >&2; exit 2; }
+SD="${SR}/runs/flash_chord/${RUN}"; DD="${DR}/runs/flash_chord/${RUN}"; LD="${ROOT}/runs/relay/${SRC_ENV}/${RUN}"
+mkdir -p "${LD}"
+ssh -o BatchMode=yes "${DH}" "mkdir -p '${DD}'"
+copied=()
+relay() {  # relay <源文件名> <目标文件名>
+  local src=$1 dst=$2 s1 s2 s3
+  s1="$(ssh -o BatchMode=yes "${SH}" "sha256sum '${SD}/${src}'" | cut -d' ' -f1)"
+  ssh -o BatchMode=yes "${SH}" "cat '${SD}/${src}'" > "${LD}/${src}"
+  s2="$(shasum -a 256 "${LD}/${src}" | cut -d' ' -f1)"
+  [ "${s1}" = "${s2}" ] || { echo "${src}：源 ${s1} ≠ Mac ${s2}" >&2; exit 1; }
+  if ssh -o BatchMode=yes "${DH}" "test -e '${DD}/${dst}'"; then
+    s3="$(ssh -o BatchMode=yes "${DH}" "sha256sum '${DD}/${dst}'" | cut -d' ' -f1)"
+    [ "${s3}" = "${s1}" ] || { echo "${dst}：目标上已有且内容不同（${s3}），不覆盖" >&2; exit 1; }
+    echo "  ${dst}：目标上已有，sha256 一致（${s1:0:16}…）"
+  else
+    ssh -o BatchMode=yes "${DH}" "cat > '${DD}/${dst}.part' && mv '${DD}/${dst}.part' '${DD}/${dst}'" < "${LD}/${src}"
+    s3="$(ssh -o BatchMode=yes "${DH}" "sha256sum '${DD}/${dst}'" | cut -d' ' -f1)"
+    [ "${s3}" = "${s1}" ] || { echo "${dst}：源 ${s1} ≠ 目标 ${s3}" >&2; exit 1; }
+    echo "  ${src} → ${dst}（sha256 ${s1:0:16}…，三端一致）"
+  fi
+  copied+=("\"${src} → ${dst} (sha256 ${s1})\"")
+}
+echo "中转 ${RUN}：${SH}:${SD} → Mac → ${DH}:${DD}"
+for step in "$@"; do
+  relay "policy_${step}.safetensors" "policy_${step}.safetensors"
+  if ssh -o BatchMode=yes "${SH}" "test -f '${SD}/eval_${step}_w4096.json'"; then
+    relay "eval_${step}_w4096.json" "eval_${step}_w4096.${STAG}.json"
+  fi
+done
+stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+printf '{"source_host": "%s", "source_dir": "%s", "files": [%s], "copied_at": "%s", "via": "ssh cat through the Mac (scripts/dev/relay-run)", "purpose": "%s"}\n' \
+  "${SH}" "${SD}" "$(IFS=,; echo "${copied[*]}")" "${stamp}" "${PURPOSE}" \
+  | ssh -o BatchMode=yes "${DH}" "cat > '${DD}/COPIED_FROM_${stamp}.json'"
+echo "来历写在 ${DH}:${DD}/COPIED_FROM_${stamp}.json"

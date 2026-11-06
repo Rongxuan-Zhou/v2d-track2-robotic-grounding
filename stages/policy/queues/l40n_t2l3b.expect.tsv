@@ -1,0 +1,3 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t2-ep15-w2048-cap10m-r3o-l40n	smoke-t2-ep15-w2048-cap10m-r3o-l40n	2026-05-06_11-06-15_wet_floor_sign_pick_place_ground_08	frame	715	false	0.015	0.086	10000000	42	no
+t2-ep8-w2048-cap10m-r3o-l40n	smoke-t2-ep8-w2048-cap10m-r3o-l40n	2026-06-05_15-08-08_skinny_wood_chair_push_10	frame	708	false	0.015	0.086	10000000	42	no

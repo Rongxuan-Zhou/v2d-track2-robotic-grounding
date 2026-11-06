@@ -1,0 +1,3 @@
+# Tier 1 r3o 铺开：seed 42，三段各两集（ep19、13；ep7、3；ep22、16），mf4090，buffer 400 万，同 t1zs；配方取 10/9 清单（t1_select_r3x.tsv）里同集的 run，换集时对照现在的规则清单，段 t1zt4 的候选导出（计划 agent-doc/plan-t1r3o-2026-10-31.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	7	t1-ep7-w2048-cap4m-r3o-mf4090	349999104
+1	22	t1-ep22-w2048-cap4m-r3o-mf4090	349999104

@@ -1,0 +1,12 @@
+# 兼容性验证清单（mf4090）：v0.4.0 训出的 checkpoint 在 8c778f9 评测器里能否加载、导出。计划 agent-doc/plan-box6-and-eval-runtime-2026-10-01.md 第 3.3 节。
+# tab 分隔：类型 run 步数 世界数（stages/evaluate/compat_8c778f9.sh）。export 行全部导出成功才开方盒训练（门槛）。
+# export：只有地面的 Tier 1 通过 run（ep8，1 个与 2 个世界）、圆柱支撑面的 Tier 1 通过 run（ep6）、Tier 2 第 1 批 A 段第一条（ep2）
+export	t1-ep8-w2048-cap4m-mf4090	349999104	1
+export	t1-ep6-w2048-cap4m-mf4090	349999104	1
+export	t2-ep2-w2048-cap4m-mf4090	349999104	1
+export	t1-ep8-w2048-cap4m-mf4090	349999104	2
+# eval：同一 checkpoint 用 8c778f9 评 4096 世界，与 v0.4.0 评测器的 eval_349999104_w4096.json 比
+eval	t1-ep6-w2048-cap4m-mf4090	349999104	4096
+# guard / negctl：Tier 1 第 1 批 ep1 的最终 policy 含 5892 个 NaN（results/diverge/ckpt_nonfinite_ep1.txt）
+guard	t1-ep1-w2048-cap4m-mf4090	349999104	1
+negctl	t1-ep1-w2048-cap4m-mf4090	349999104	1

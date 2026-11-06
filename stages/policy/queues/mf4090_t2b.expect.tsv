@@ -1,0 +1,9 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t2-ep13-w2048-cap4m-mf4090	smoke-t2-ep13-w2048-cap4m-mf4090	2026-06-09_10-19-09_snack_box_desk_through_06	frame	922	true	0.015	0.086	4000000	42	no
+t2-ep15-w2048-cap4m-mf4090	smoke-t2-ep15-w2048-cap4m-mf4090	2026-05-06_11-06-15_wet_floor_sign_pick_place_ground_08	frame	715	false	0.015	0.086	4000000	42	no
+t2-ep17-w2048-cap4m-mf4090	smoke-t2-ep17-w2048-cap4m-mf4090	2026-05-01_17-04-55_traffic_cone_ground_table_02	frame	440	true	0.015	0.086	4000000	42	no
+t2-ep19-w2048-cap4m-mf4090	smoke-t2-ep19-w2048-cap4m-mf4090	2026-05-19_10-19-48_cane_swing_05	frame	886	false	0.015	0.086	4000000	42	no
+t2-ep21-w2048-cap4m-mf4090	smoke-t2-ep21-w2048-cap4m-mf4090	2026-04-29_11-53-57_tall_bar_stool_pull_08	frame	678	false	0.015	0.086	4000000	42	no
+t2-ep23-w2048-cap4m-mf4090	smoke-t2-ep23-w2048-cap4m-mf4090	2026-06-03_15-08-03_toy_stroller_back_forth_ground_04	frame	946	false	0.015	0.086	4000000	42	no
+t2-ep25-w2048-cap4m-mf4090	smoke-t2-ep25-w2048-cap4m-mf4090	2026-03-20_11-59-57_cyan_water_bottle_rotate_01	frame	859	true	0.015	0.086	4000000	42	no
+t2-ep27-w2048-cap4m-mf4090	smoke-t2-ep27-w2048-cap4m-mf4090	2026-05-01_11-15-05_woven_basket_ground_desk_10	frame	565	true	0.015	0.086	4000000	42	no

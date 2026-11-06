@@ -1,0 +1,6 @@
+# 回放速度对照（Day 1b 诊断触发条件 T2，与 Tier 2 无关）mf4090 正式：与 Day 1 的 t1-ep20-w2048-cap1m-mf4090 只差按真实时长回放。
+# V2D_MAX_RETRY=0：续训不恢复 replay，失败就停下、从 0 重来；V2D_WANDB_UPLOAD_CKPT=0：checkpoint 只存本地（Day 1b A 第 1 次的教训）。
+# 计划与事先登记的判据：agent-doc/plan-playback-2026-09-28.md
+# 真实时长回放要重采样参考；上游 G1 绑定参考时要求 palm 与关节 FK 逐帧相差 ≤ 1e-4 m / 1e-4 rad，不区分插值帧，重采样后实测最大
+# 0.61 mm / 2.0e-3 rad（results/playback/palm_frame_probe.txt），所以只把这两个校验容差放到 2 mm / 5e-3 rad（只用于校验，不进训练）
+V2D_WANDB_TAG=playback V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 t1-ep20-w2048-cap1m-rt-mf4090 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-06-08_16-57-34_rice_cooker_clockwise_04/robot_name=g1/data.parquet 2048 349999104 training.replay.capacity=1000000 task.source_frame_playback=false +embodiment.config.frame_position_tolerance=0.002 +embodiment.config.frame_orientation_tolerance=0.005

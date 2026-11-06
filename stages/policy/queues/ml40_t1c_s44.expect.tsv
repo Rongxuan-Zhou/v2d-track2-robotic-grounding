@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep11-w2048-cap10m-r3a-c10-s44-ml40	smoke-t1-ep11-w2048-cap10m-r3a-c10-s44-ml40	2026-04-24_13-56-58_light_blue_book_pick_place_09	frame	901	true	0.015	0.086	10000000	44	no

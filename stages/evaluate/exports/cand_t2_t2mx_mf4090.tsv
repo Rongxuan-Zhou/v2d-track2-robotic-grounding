@@ -1,0 +1,4 @@
+# Tier 2 变体 A 换到 mf4090、buffer 400 万：SP 过、MP 不过的 ep13、19、14 seed 42（ml40、1000 万的变体 A 没修好 MP；基线取 Tier 2 导出清单），段 t2mx 的候选导出（计划 agent-doc/plan-t2mx-2026-10-19.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	13	t2-ep13-w2048-cap4m-r3a-mf4090	349999104
+2	19	t2-ep19-w2048-cap4m-r3a-mf4090	349999104
+2	14	t2-ep14-w2048-cap4m-r3a-mf4090	349999104

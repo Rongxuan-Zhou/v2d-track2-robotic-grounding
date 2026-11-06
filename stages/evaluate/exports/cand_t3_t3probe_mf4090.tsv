@@ -1,0 +1,2 @@
+# Tier 3 探路提交的占位（计划 agent-doc/plan-r3o-2026-10-15.md 2.4）：mf4090 上 ep28，400 万步，已训、已评 4096 世界、已导出；P1a 占着 GPU，用 V2D_GPU_WAIT_START=0 V2D_GPU_WAIT_S=0 过一遍导出链，只为写结果表。档位 episode run 步数。
+3	28	t3-ep28-w2048-cap4m-r3a-hm28-ph-mf4090	4096000

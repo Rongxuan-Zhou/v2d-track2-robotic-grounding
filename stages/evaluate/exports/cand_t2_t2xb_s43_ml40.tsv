@@ -1,0 +1,3 @@
+# Tier 2 铺开：其余 24 条的变体 A seed 42（ml40，buffer 1000 万，按基线 4096 世界失败:骨盆从低到高），段 t2xb_s43 的候选导出（计划 agent-doc/plan-t2-scaleout-2026-10-09.md）：档位 episode run 步数。本段改种子：种子 43（reset.seed=43 training.seed=43）。make_var_queue.py 生成，不要手改。
+2	13	t2-ep13-w2048-cap10m-r3a-s43-ml40	349999104
+2	19	t2-ep19-w2048-cap10m-r3a-s43-ml40	349999104

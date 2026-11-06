@@ -1,0 +1,6 @@
+# ml40（L40S）Day 1b：官方 snack_box 样例，满配（默认 1000 万 buffer，不加任何覆盖），判定“配方与环境 vs 数据”
+# V2D_MAX_RETRY=0：续训不恢复 replay，续出来的就不再是“满配不加覆盖”；失败就停下、从 0 重来
+# 第 2 次尝试（…ml40b）：第 1 次在第一个 checkpoint 上传 W&B artifact 时因连不上服务器核验 token 而崩溃；
+# V2D_WANDB_UPLOAD_CKPT=0 关掉 checkpoint 上传（logging.upload_checkpoints=false，属日志项），指标照常进 W&B
+# 计划与事先登记的判据：agent-doc/plan-day1b-2026-09-27.md、agent-doc/experiments/2026-09-28-day1.md
+V2D_WANDB_TAG=control V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 ctrl-snackbox-w2048-cap10m-ml40b /v2d/assets/human_motion_data/whole_body/soma/sequence_id=2026-03-06_10-24-18_snack_box_pick_and_place_01/robot_name=g1/data.parquet 2048 349999104

@@ -1,0 +1,5 @@
+# Tier 3 gb3（标定内参）：变体 A seed 42（mf4090，buffer 400 万，参考是 runs/motion/tier3_gb3，基线取 Tier 2 导出清单，支撑面按 gb3），段 t3pg 的候选导出（计划 agent-doc/plan-t3-gb3-switch-2026-10-17.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	20	t3-ep20-w2048-cap4m-r3a-gb3-mf4090	349999104
+3	0	t3-ep0-w2048-cap4m-r3a-gb3-mf4090	349999104
+3	22	t3-ep22-w2048-cap4m-r3a-gb3-mf4090	349999104
+3	21	t3-ep21-w2048-cap4m-r3a-gb3-mf4090	349999104

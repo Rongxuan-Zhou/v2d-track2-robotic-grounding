@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep7-w2048-cap4m-p185-mf4090	smoke-t1-ep7-w2048-cap4m-p185-mf4090	2026-05-29_15-20-43_iron_round_table_02	frame	896	true	0.015	0.086	4000000	42	no

@@ -1,0 +1,3 @@
+# Tier 2 AUC 榜：再换 4 集，r3o seed 42，第三台 l40n（L40），buffer 1000 万（配方同 t2o3），基线取 Tier 2 导出清单，段 t2l3 的候选导出（计划 agent-doc/plan-t2auc3-2026-11-02.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	18	t2-ep18-w2048-cap10m-r3o-l40n	349999104
+2	6	t2-ep6-w2048-cap10m-r3o-l40n	349999104

@@ -1,0 +1,120 @@
+{
+ "plan": "agent-doc/plan-t3g4-2026-10-19.md 判据 G2（第 2 版：margin 1.0 cm，SP-SR 不低于现选减 0.05）",
+ "step": 349999104,
+ "margin_cm": 1.0,
+ "sp_floor": 0.5,
+ "source": "现选 run（gb1018e22，stages/evaluate/exports/t3_select_gb1018e22.tsv）的 4096 世界值：ep0、6、7、8、20、22、21、29 取 results/t3gb3/switch_table_gb1018.txt；ep18 取 results/t3kfix/retrain_switch_t3pk_mf4090.txt；ep24、ep26 取 results/t3kfix/reexport_mf4090.txt（k-fix 参考上 4096 世界的重新导出）",
+ "pairs": [
+  {
+   "ep": 0,
+   "new": "t3-ep0-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep0-w2048-cap4m-r3a-gb3-mf4090",
+   "cur_mppe": 3.98,
+   "cur_sp": 0.9358,
+   "cur_mp": 0.916,
+   "report_only": false
+  },
+  {
+   "ep": 6,
+   "new": "t3-ep6-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep6-w2048-cap10m-r3a-gb3-ml40",
+   "cur_mppe": 3.77,
+   "cur_sp": 0.9758,
+   "cur_mp": 0.0713,
+   "report_only": false
+  },
+  {
+   "ep": 7,
+   "new": "t3-ep7-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep7-w2048-cap10m-r3a-gb3-ml40",
+   "cur_mppe": 2.37,
+   "cur_sp": 0.991,
+   "cur_mp": 0.9902,
+   "report_only": false
+  },
+  {
+   "ep": 8,
+   "new": "t3-ep8-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep8-w2048-cap10m-r3a-gb3-ml40",
+   "cur_mppe": 1.61,
+   "cur_sp": 0.9934,
+   "cur_mp": 0.9924,
+   "report_only": false
+  },
+  {
+   "ep": 20,
+   "new": "t3-ep20-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep20-w2048-cap4m-r3a-gb3-mf4090",
+   "cur_mppe": 4.01,
+   "cur_sp": 0.8923,
+   "cur_mp": 0.8606,
+   "report_only": false
+  },
+  {
+   "ep": 22,
+   "new": "t3-ep22-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep22-w2048-cap4m-r3a-gb3-mf4090",
+   "cur_mppe": 2.03,
+   "cur_sp": 0.9922,
+   "cur_mp": 0.9858,
+   "report_only": false
+  },
+  {
+   "ep": 18,
+   "new": "t3-ep18-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep18-w2048-cap4m-r3a-kfix-mf4090",
+   "cur_mppe": 4.63,
+   "cur_sp": 0.9243,
+   "cur_mp": 0.8989,
+   "report_only": false
+  },
+  {
+   "ep": 24,
+   "new": "t3-ep24-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep24-w2048-cap4m-r3a-v2-mf4090",
+   "cur_mppe": 3.1,
+   "cur_sp": 0.9978,
+   "cur_mp": 0.9019,
+   "report_only": false
+  },
+  {
+   "ep": 26,
+   "new": "t3-ep26-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep26-w2048-cap4m-r3a-v2-mf4090",
+   "cur_mppe": 2.85,
+   "cur_sp": 0.9922,
+   "cur_mp": 0.9836,
+   "report_only": false
+  },
+  {
+   "ep": 29,
+   "new": "t3-ep29-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep29-w2048-cap4m-r3a-v2-mf4090",
+   "cur_mppe": 8.0,
+   "cur_sp": 0.713,
+   "cur_mp": 0.0,
+   "report_only": false
+  },
+  {
+   "ep": 21,
+   "new": "t3-ep21-w2048-cap4m-r3a-gb4-mf4090",
+   "ref_dir": "tier3_gb4",
+   "cur": "t3-ep21-w2048-cap4m-r3a-hm-mf4090",
+   "cur_mppe": 8.96,
+   "cur_sp": 0.876,
+   "cur_mp": 0.501,
+   "report_only": true
+  }
+ ],
+ "sp_drop_max": 0.05
+}

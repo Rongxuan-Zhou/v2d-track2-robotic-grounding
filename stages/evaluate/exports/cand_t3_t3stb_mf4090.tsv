@@ -1,0 +1,13 @@
+# 同上，t3stb 的候选导出（计划 agent-doc/plan-t3static-2026-10-21.md）：档位 episode run 步数。手写（只评冒烟那一步，复核 MAJOR 1）。
+3	2	smoke-t3-ep2-w2048-cap4m-r3a-st-mf4090	409600
+3	3	smoke-t3-ep3-w2048-cap4m-r3a-st-mf4090	409600
+3	4	smoke-t3-ep4-w2048-cap4m-r3a-st-mf4090	409600
+3	9	smoke-t3-ep9-w2048-cap4m-r3a-st-mf4090	409600
+3	11	smoke-t3-ep11-w2048-cap4m-r3a-st-mf4090	409600
+3	12	smoke-t3-ep12-w2048-cap4m-r3a-st-mf4090	409600
+3	13	smoke-t3-ep13-w2048-cap4m-r3a-st-mf4090	409600
+3	17	smoke-t3-ep17-w2048-cap4m-r3a-st-mf4090	409600
+3	19	smoke-t3-ep19-w2048-cap4m-r3a-st-mf4090	409600
+3	25	smoke-t3-ep25-w2048-cap4m-r3a-st-mf4090	409600
+3	27	smoke-t3-ep27-w2048-cap4m-r3a-st-mf4090	409600
+3	28	smoke-t3-ep28-w2048-cap4m-r3a-st-mf4090	409600

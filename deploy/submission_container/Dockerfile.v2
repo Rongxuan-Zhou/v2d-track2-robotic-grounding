@@ -1,0 +1,6 @@
+# Maniphys Lab V2D Track 2 submission container, v2 (2026-11-05).
+# v1 (image sha256:d870d3ab...) plus the reference motion each checkpoint loads at evaluation time.
+# Every checkpoint stores absolute paths under /repo/runs/motion: task.parquet in its resolved config, and the object
+# mesh paths inside that parquet. v1 did not ship them. Nothing under /submission or /workspace changes.
+FROM maniphys-lab-v2d-submission:final
+COPY repo /repo

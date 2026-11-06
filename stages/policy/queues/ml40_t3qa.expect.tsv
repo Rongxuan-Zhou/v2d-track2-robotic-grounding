@@ -1,0 +1,9 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t3-ep4-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep4-w2048-cap10m-r3a-hm-ml40	2026-04-24_11-40-52_baseball_bat_rotate_05	frame	803	false	0.015	0.086	10000000	42	no
+t3-ep5-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep5-w2048-cap10m-r3a-hm-ml40	2026-03-18_19-36-56_g1_box_rotate_01	frame	1003	false	0.015	0.086	10000000	42	no
+t3-ep6-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep6-w2048-cap10m-r3a-hm-ml40	2026-06-01_11-26-44_monitor_rotate_05	frame	546	true	0.015	0.086	10000000	42	no
+t3-ep7-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep7-w2048-cap10m-r3a-hm-ml40	2026-05-29_15-20-43_iron_round_table_02	frame	896	true	0.015	0.086	10000000	42	no
+t3-ep8-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep8-w2048-cap10m-r3a-hm-ml40	2026-06-05_15-08-08_skinny_wood_chair_push_10	frame	708	false	0.015	0.086	10000000	42	no
+t3-ep9-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep9-w2048-cap10m-r3a-hm-ml40	2026-06-04_16-45-04_big_red_bowl_under_skinny_wood_chair_03	frame	870	true	0.015	0.086	10000000	42	no
+t3-ep10-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep10-w2048-cap10m-r3a-hm-ml40	2026-05-01_11-36-40_white_desk_lower_to_ground_10	frame	794	false	0.015	0.086	10000000	42	no
+t3-ep11-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep11-w2048-cap10m-r3a-hm-ml40	2026-04-24_13-56-58_light_blue_book_pick_place_09	frame	901	true	0.015	0.086	10000000	42	no

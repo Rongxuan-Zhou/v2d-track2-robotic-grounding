@@ -1,0 +1,6 @@
+# t2sd：Tier 2 ep25 冒烟密存档的前 5 份 checkpoint，4096 世界评测（计划 agent-doc/plan-t2sd-2026-10-19.md 第 1 节）。day2_eval_chain.sh 的附加表：eval run 步数 回放 源帧数。
+eval	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	409600	frame	859
+eval	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	819200	frame	859
+eval	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	1228800	frame	859
+eval	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	1638400	frame	859
+eval	smoke-t2-ep25-w2048-cap4m-r3a-sd-mf4090	2048000	frame	859

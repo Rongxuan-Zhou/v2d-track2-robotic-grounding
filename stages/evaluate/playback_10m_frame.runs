@@ -1,0 +1,5 @@
+# 回放速度对照（计划 agent-doc/plan-playback-2026-09-28.md 第 2 版）：10m、逐帧回放（1.67 倍速）一臂的最后三个 checkpoint。
+# 列同 diag_day1b.runs。真实时长的 G4 已知答案 353 700 447 来自 results/playback/refcheck_ep20_rt.txt，关注段与 G6 帧按时间换算。
+t1-ep20-w2048-cap10m-ml40 330012672 209 420 209 420 269 359 -
+t1-ep20-w2048-cap10m-ml40 340013056 209 420 209 420 269 359 -
+t1-ep20-w2048-cap10m-ml40 349999104 209 420 209 420 269 359 -

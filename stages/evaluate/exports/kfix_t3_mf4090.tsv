@@ -1,0 +1,9 @@
+run	step	parquet	suffix	mode
+t3-ep26-w2048-cap4m-r3a-v2-mf4090	349999104	-	_plain	plain
+t3-ep26-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_v2/whole_body/soma/sequence_id=2026-06-05_16-05-08_skateboard_rotate_ground_10/robot_name=g1/data.parquet	_idchk	idchk
+t3-ep0-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_kfix/whole_body/soma/sequence_id=2026-06-04_14-16-23_tall_bar_stool_tip_up_04/robot_name=g1/data.parquet	_kfixgb	kfix
+t3-ep18-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_kfix/whole_body/soma/sequence_id=2026-05-06_10-00-19_blue_trash_can_drag_sideways_08/robot_name=g1/data.parquet	_kfixgb	kfix
+t3-ep24-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_kfix/whole_body/soma/sequence_id=2026-05-29_15-43-20_watering_can_pour_right_02/robot_name=g1/data.parquet	_kfixgb	kfix
+t3-ep26-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_kfix/whole_body/soma/sequence_id=2026-06-05_16-05-08_skateboard_rotate_ground_10/robot_name=g1/data.parquet	_kfixgb	kfix
+t3-ep29-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_kfix/whole_body/soma/sequence_id=2026-06-05_18-27-40_rolling_luggage_left_foot_push_06/robot_name=g1/data.parquet	_kfixgb	kfix
+t3-ep20-w2048-cap4m-r3a-v2-mf4090	349999104	/repo/runs/motion/tier3_v2s/whole_body/soma/sequence_id=2026-06-08_16-57-34_rice_cooker_clockwise_04/robot_name=g1/data.parquet	_hmsup	kfix

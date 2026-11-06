@@ -1,0 +1,692 @@
+# English purposes for tools/repo_index.py: repo path<TAB>English text. Translated 2026-11-06 from the Chinese file headers.
+libs/v2d_infra/paths.py	In-repo path resolution. Scripts no longer hard-code absolute paths.
+libs/v2d_infra/soma_fk.py	The single entry point for SOMA-X forward kinematics.
+libs/v2d_infra/test_paths.py	Tests for V2D_T3_SET in paths.py (guard plan agent-doc/plan-t3-pilot-v2-2026-10-10.md section 3: the corrected-version directory does not overwrite round 1; run spec not written)
+libs/v2d_infra/test_soma_fk.py	Tests for the soma_fk cache. Run on a machine with py-soma-x installed (mf4090 host).
+libs/v2d_infra/test_tier_guard.py	Tests for tier_guard (run in a subprocess, because an installed audit hook cannot be removed).
+libs/v2d_infra/tier_guard.py	Mechanism guard for tier isolation: after forbid_tier1() is called, any read of a Tier 1 directory in this process raises an error.
+scripts/dev/build-flash-chord	Builds the FlashCHORD image (run on a training machine). Same Dockerfile as the official flash_chord/docker/run.sh build.
+scripts/dev/in-flash-chord	Runs a command in a one-off FlashCHORD container (run on a training machine). Arguments follow the official flash_chord/docker/run.sh start.
+scripts/dev/incontainer	Runs a command with Isaac's python in a one-off container, with the whole repo mounted at /repo. Run on a training machine.
+scripts/dev/init-remote	One-time setup of the remote directory: create directories, place sentinels, push .env explicitly.
+scripts/dev/pipe-py	Runs a stdlib-only Python script from the repo on a training machine: the script goes over ssh stdin and runs at the root of the remote repo copy.
+scripts/dev/pull-results	Pulls back only small artifacts (results/), not the checkpoints and videos in runs/.
+scripts/dev/pull-runs	Pulls back the useful parts of training artifacts from a training machine: policy weights, small metadata files, text logs under runs/logs.
+scripts/dev/push-new-files	Places only new files on a training machine while a chain runs and a full sync is not possible (scripts/dev/remote rewrites .v2d-source-commit, which stops the training chain). Run on the Mac.
+scripts/dev/record	Runs a command and writes its output with provenance to results/<name>.txt (run at the repo root; on training machines called via scripts/dev/remote).
+scripts/dev/relay-run	Relays some policy checkpoints of a run (and the source machine's 4096-world evaluation JSON, if present) from one training machine to another via the Mac.
+scripts/dev/remote	Syncs the local working tree to a training machine and runs a command there.
+scripts/dev/stage-remote	Stages the local working tree to runs/stage/<origin>/ on a training machine (Mac, repo root), for stages/policy/stage_sync.sh to sync into the repo copy after the chain ends.
+scripts/dev/wait-run	On the Mac, waits for a run on a training machine to end (read-only): exits 0 on DONE, exits 3 when run_record shows abort.
+stages/evaluate/align_frefs_t3.py	Frame 0 alignment of Tier 3 frame references (on a training machine in a container via scripts/dev/in-flash-chord, CPU only; needs numpy, pyarrow). Plan agent-doc/plan-t3align-2026-10-21.md.
+stages/evaluate/arm_ckpt25.sh	Arms the two arm_after jobs for 10/18 daytime (training machine, repo root). Plan agent-doc/plan-ep25-sweep-seeds-2026-10-18.md section 4; commands match the plan exactly.
+stages/evaluate/arm_diag2.sh	Starts the diagnosis chain for sequences with MP-SR 0 (training machine, repo root). Plan agent-doc/plan-diag-mpsr0-2026-10-02.md section 5 step 4.
+stages/evaluate/arm_ep7_eval.sh	Starts the evaluation chain for the last finite ep7 checkpoint (training machine, repo root). Plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md part A.
+stages/evaluate/arm_export_chain.sh	Starts the waiting tmux for the submission export chain (training machine, repo root). Plan agent-doc/plan-submission-exports-2026-10-02.md section 4.
+stages/evaluate/assemble_t3_results.py	Assembles a Tier 3 results directory from several pulled export directories per a selection list (Mac, repo root, stdlib only). Plan agent-doc/plan-t3pack-2026-10-29.md section 1 item 3.
+stages/evaluate/batch_error_table.py	Joins all judged per-frame full-config runs into one error table to see if MP-SR / SP-SR is limited by position or orientation (Mac, stdlib only, reads saved results).
+stages/evaluate/batch_verdict.py	Judges the Day 1 criteria for each row of the expectation table (reads text results under results/ only, stdlib only, runs on any machine).
+stages/evaluate/blowup_inspect.py	Shows object and palm positions in the frames before collapse for collapsed worlds in a forensic rollout (blowup_rollout.py npz). Needs numpy; run in the FlashCHORD container without GPU.
+stages/evaluate/blowup_rollout.py	Forensic rollout for divergence: runs the official evaluation path once, records world coordinates of the object and both palms each step, saves them as is (non-finite values kept).
+stages/evaluate/board_diff.py	Compares two Kaggle leaderboard snapshots board by board (Mac, stdlib only, reads snapshot records; called by tools/board_watch.sh).
+stages/evaluate/case_clip.py	SOP success and failure case rollout videos: record rigid body poses of all worlds in one evaluation rollout, pick worlds by registered rules, render the poses to video (in container).
+stages/evaluate/case_clip.sh	SOP success and failure case videos: record one rollout, pick worlds, render a two-column final video (training machine, repo root). Plan agent-doc/plan-site-cases-video-2026-10-08.md version 2.
+stages/evaluate/case_compose.py	Joins the two columns from case_clip.py render into a final video with a cover image (in container, imageio_ffmpeg ffmpeg). Plan agent-doc/plan-site-cases-video-2026-10-08.md section 3.
+stages/evaluate/case_manifest.py	Manifest for SOP case videos: origin, selection rule, per-world errors, gate values, file size and md5 for each clip (in container, saved via scripts/dev/record).
+stages/evaluate/check_export.py	Checks an 8c778f9 export (output of stages/evaluate/fc_export.sh): structure, provenance summary, and metrics JSON (on the training host: numpy, pyarrow).
+stages/evaluate/check_export.sh	Runs stages/evaluate/check_export.py (training machine, repo root): runs on the host if host python3 can import numpy and pyarrow.parquet.
+stages/evaluate/check_t2_select.py	Checks that the exports pulled per the selection list and the packed CSV are the selected runs (Mac, stdlib only). Plan agent-doc/plan-t2-select-b-2026-10-12.md version 2.
+stages/evaluate/ckpt_sweep.sh	Checkpoint sweep for one episode: coarse sweep, fine sweep, pick by MPPE, export (training machine, repo root; called by V2D_PRE_CMD of arm_after.sh).
+stages/evaluate/ckpt_sweep_pick.py	Point selection for the checkpoint sweep (training machine, repo root, stdlib only, reads saved 4096-world evaluations under runs/flash_chord).
+stages/evaluate/compat_8c778f9.sh	Can checkpoints trained with v0.4.0 load and export in the 8c778f9 evaluator (training machine, repo root, in tmux). Plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md sections 3.3, 3.6.
+stages/evaluate/compat_expect.sh	The two expected-failure rows of the compatibility check (called by stages/evaluate/compat_8c778f9.sh, saved via scripts/dev/record). Plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md 3.3.
+stages/evaluate/contact_check.py	One-time check that two ways of getting contact match frame by frame (in container, needs numpy, pyarrow): fail_onset.py reads hand_contact_active directly from the reference parquet.
+stages/evaluate/contact_onset_table.py	Contact flag segments versus threshold crossing times for one tier's reference (in container via scripts/dev/in-flash-chord, CPU only; reads only this tier's retargeted reference).
+stages/evaluate/contact_window_errors.py	How well the robot tracks around contact and when it falls (in container via scripts/dev/in-flash-chord, numpy and pyarrow only; reads existing files, reports without judging).
+stages/evaluate/csv_episode_diff.py	Compares two packed submission CSVs row by row and lists differing rows by episode (Mac, repo root, stdlib only). Plan agent-doc/plan-t3-gb3-switch-2026-10-17.md section 4 item 4.
+stages/evaluate/csv_frame0_check.py	End-to-end check of Tier 3 alignment: frame 0 of each episode in the packed CSV versus Tier 1 frame 0 (Mac, numpy, pyarrow). Plan agent-doc/plan-t3align-2026-10-21.md review change 1.
+stages/evaluate/csv_rotation_check.py	Pre-upload check: is the Tier 3 CSV repacked after rotating frame refs exactly the original CSV rotated by R about the world origin (Mac, needs numpy; reads two CSVs and ROTATION.json).
+stages/evaluate/day2_compare.py	Day 2 verdict (reads text results under results/ only, stdlib only, runs on any machine).
+stages/evaluate/day2_eval_chain.sh	Day 2 evaluation chain (plan agent-doc/plan-day2-2026-09-28.md version 2): after the training chain ends, evaluates each run with DONE; one failure does not block others. Training machine, tmux.
+stages/evaluate/diag2_chain.sh	Diagnosis chain for sequences with MP-SR 0 (training machine, repo root, in tmux). Plan agent-doc/plan-diag-mpsr0-2026-10-02.md section 5 step 4.
+stages/evaluate/diag2_sync.py	For trial runs: reads the npz saved by diag_rollout.py --palms and checks two things; exits 0 only if both pass (numpy only, in the FlashCHORD container).
+stages/evaluate/diag_day1b.sh	Day 1b per-frame diagnosis (runs on mf4090, uses GPU; plan agent-doc/plan-day1b-2026-09-27.md version 3).
+stages/evaluate/diag_err_profile.py	Object error over frames in a diagnosis rollout (numpy only; reads npz from diag_rollout.py; in container; reports without judging).
+stages/evaluate/diag_onset.py	Failed worlds that lift then drop: did the hand stay attached before the drop (numpy only; same container as diag_phase.py, reads diag_rollout.py --palms npz; reports without judging).
+stages/evaluate/diag_palms.py	For diagnosis rollouts: records world coordinates of both robot palms and the object rigid body after each step (FlashCHORD container, uses GPU; reads simulation state only, no writes).
+stages/evaluate/diag_phase.py	Diagnosis of sequences with MP-SR 0: does failure occur in approach, grasp, or tracking (numpy only; same FlashCHORD container as the evaluator, same numpy version).
+stages/evaluate/diag_report.py	Per-frame diagnosis report (numpy only): where ADD-AUC is lost, how orientation error changes, whether the object is rotated, hand state, failed worlds.
+stages/evaluate/diag_report_diff.py	Line-by-line comparison of old and new diag_report.py outputs on the same rollout (stdlib only, runs on any machine).
+stages/evaluate/diag_rollout.py	Runs the official evaluation path once and saves the scored rollout as npz (in the FlashCHORD container, uses GPU).
+stages/evaluate/diag_triggers.py	Translates the diagnosis report into result and next step by pre-registered numeric conditions (reads text under results/ only, stdlib only).
+stages/evaluate/dump_chain.sh	Batch evaluation for per-frame termination analysis (training machine, repo root, in tmux): runs stages/evaluate/fc_eval_dump.sh for each list entry (8c778f9 evaluator, 4096 worlds).
+stages/evaluate/dump_knock.py	Distribution of mean object position error in one per-world dump (eval_<steps>_w<worlds>.npz from fc_eval_dump.sh): what share of worlds carry the object far from the reference.
+stages/evaluate/ep7_ckpt_eval.sh	Evaluates an unfinished checkpoint (the last finite policy before divergence in the two ep7 box runs), checks candidate conditions, then runs one forensic rollout.
+stages/evaluate/ep_drop_facts.py	Fact inventory of an episode where the object is knocked off or falls (in container via scripts/dev/in-flash-chord, numpy and pyarrow only, reads existing files; reports without judging).
+stages/evaluate/eval_dump_errors.py	Runs scripts/evaluate_policy.py unchanged in the 8c778f9 evaluator and saves per-step, per-world tracking errors as npz (in container).
+stages/evaluate/eval_json_record.py	Records a 4096-world evaluation JSON as a summary_json line in the same form as fc_eval records (host python is enough, stdlib only, read-only).
+stages/evaluate/eval_outcome_tally.py	Counts saved 4096-world evaluations: how many succeed, how many of those have MP-SR 0, and the verdict for ground-only sequences (Mac, stdlib only, reads results/).
+stages/evaluate/eval_parquet_pair.sh	Evaluates one policy with one evaluator (the V2D_FC_SRC copy) on two references at 4096 worlds each and compares metrics (training machine, repo root, GPU about 2 x 5 minutes).
+stages/evaluate/eval_playback_override.py	Evaluates a checkpoint with a given playback mode (in the FlashCHORD container, uses GPU); used for Day 2 cross evaluation.
+stages/evaluate/eval_runtime_facts.sh	Static facts on whether checkpoints trained with v0.4.0 can load, export, and pack in the 8c778f9 evaluator (Mac, read-only: local new kit plus gh api for upstream source).
+stages/evaluate/eval_spread.py	Shape of the error distribution from the summary values of a 4096-world evaluation JSON: mean, standard deviation, and world share per failure cause (stdlib only).
+stages/evaluate/eval_table.py	Merges several evaluation texts into one table (Mac, stdlib only, reads saved results).
+stages/evaluate/export_after_eval.sh	Starts the export chain only after the evaluation chain ends successfully (training machine, repo root, in tmux). Plan agent-doc/plan-t1-r3x-2026-10-08.md section 3 (Fable 5.1 review M2).
+stages/evaluate/export_calibration.py	Is the 1-world export from the same distribution as the 4096-world evaluation: per candidate, compares the 4096-world success rate as a probability with the export outcome (stdlib only).
+stages/evaluate/export_chain.sh	Batch export for submission (training machine, repo root, in tmux): exports each episode's policy per the export list as a 1-world trajectory with the 8c778f9 evaluator. No upload.
+stages/evaluate/export_map.py	Generates the submission export list: which run, step, and machine for each of the 30 episodes per tier (Mac, stdlib only, reads committed results and queues).
+stages/evaluate/export_world0.py	Is the 1-world export the same as world 0 of the 4096-world evaluation (training machine, repo root, reads saved results, uses host numpy).
+stages/evaluate/fail_onset.py	Threshold crossing onset and reference contact for failed worlds (in container, needs numpy, pyarrow): reads the fc_eval_dump.sh npz, calls fall_order.run_one (definition unchanged).
+stages/evaluate/fail_split.py	Groups per-episode selection results by 1-world outcome and 4096-world fall ratio (Mac, stdlib only, reads saved results).
+stages/evaluate/fall_mechanism.py	How the robot falls: which term breaks first before the fall (in container via scripts/dev/in-flash-chord, CPU only; reads diag_rollout.py --bodies npz; reports without judging).
+stages/evaluate/fall_order.py	Tier 1 variant A failed worlds, object lost first or pelvis drift first: reads per-step errors from fc_eval_dump.sh, classifies by registered criteria (container or env with numpy).
+stages/evaluate/fall_order_one.py	Fall timing for a single run: calls run_one and describe from fall_order.py, gates and judging unchanged (plan agent-doc/plan-first-place-2026-10-14.md section 2 option C).
+stages/evaluate/fall_timeline.py	From which frame the robot loses balance, and what the reference asks of it then (in container via scripts/dev/in-flash-chord, numpy and pyarrow only; reads existing files, reports without judging).
+stages/evaluate/fc_eval_dump.sh	Evaluates a policy like stages/policy/fc_eval.sh (8c778f9 copy, 4096 worlds) and also saves per-step, per-world tracking errors as npz (stages/evaluate/eval_dump_errors.py).
+stages/evaluate/fc_export.sh	Exports one policy of a run with the 8c778f9 evaluator (training machine, repo root). Plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md sections 3, 5.
+stages/evaluate/fetch_kit.sh	Fetches the current official submission kit (Mac, repo root): downloads the zip and response headers to third_party/v2d_submission_kit/update_<first 8 of sha256>/ and unpacks it.
+stages/evaluate/finger_facts.py	How far the Dex3 fingers close in a diagnosis rollout (numpy only; reads diag_rollout.py --palms --fingers npz; in container; reports without judging).
+stages/evaluate/frame_ref_check.py	Checks on CPU first whether the packer's Track 2 coordinate conversion passes (training host, needs numpy, pyarrow). Plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md section 3.4.
+stages/evaluate/frefs_equal.py	Compares two Tier 3 frame reference directories by episode (numpy). Plan agent-doc/plan-t3b2-2026-10-28.md criterion T0: if npz sha256 differ, tells array changes from zip wrapper changes.
+stages/evaluate/frefs_from_motion_t3.py	Builds frame references from the motion source of a Tier 3 tier directory without a run (training machine, repo root, numpy, pyarrow; on ml40 in container via scripts/dev/in-flash-chord).
+stages/evaluate/frefs_t3_match.py	Before packing Tier 3, checks that frame reference and result directories match by episode (Mac, called by pack_tier.sh; stdlib only). Plan agent-doc/plan-r3o-2026-10-15.md 2.4.1
+stages/evaluate/gb3_switch.py	Rule S: does a candidate run on the calibrated-intrinsics reference replace the current run (training machine, repo root, stdlib only; reads evaluation JSON only, no ground truth).
+stages/evaluate/kfix_reexport.sh	k-fix option 4 step 6: evaluate and export existing checkpoints on the new reference (on mf4090, repo root, in tmux, saved via scripts/dev/record).
+stages/evaluate/kfix_reexport_table.py	Summary of k-fix option 4 steps 6, 7 (on mf4090, repo root, stdlib only; reads evaluation and export JSON only, no ground truth).
+stages/evaluate/kit_diff.sh	Compares two versions of the official submission kit (Mac, repo root, read-only): compares file hashes in KIT_MANIFEST.json and lists added, removed, and changed files.
+stages/evaluate/kit_freshness.py	Pre-submission checks C6 and R4 (plan agent-doc/plan-submission-check-2026-10-03.md): Mac, repo root, read-only, stdlib only.
+stages/evaluate/make_frame_references.py	Generates --frame-references for Tier 2 packing (training host, needs numpy, pyarrow; reads Tier 2 files only). Plan agent-doc/plan-submission-exports-2026-10-02.md section 3.3.
+stages/evaluate/make_frame_refs_t3.py	Generates --frame-references for Tier 3 packing (training machine, repo root, needs numpy, pyarrow; the ml40 host has no numpy, so it runs in container via scripts/dev/in-flash-chord).
+stages/evaluate/merge_frefs_t3.py	Merges several Tier 3 frame reference directories into one by episode (Mac, stdlib only; reads frame reference directories). Plan agent-doc/plan-t3-kfix-2026-10-16.md option 4 (review MAJOR 8).
+stages/evaluate/metric_threshold_facts.sh	Evaluator success rate definitions and threshold source text (Mac, read-only, reads flash_chord v0.4.0 of the training image via gh api). Each line has file and line number.
+stages/evaluate/motion_before_contact.py	Frame where the object starts moving and frame where the contact flag starts in one tier's reference (in container via scripts/dev/in-flash-chord, CPU only; reads retargeted reference; report only).
+stages/evaluate/object_onset_rollout.py	Time when the object leaves its initial pose in the 1-world export (in container via scripts/dev/in-flash-chord, CPU only, reads export parquet; reports without judging).
+stages/evaluate/onset_terms.py	Post-hoc diagnosis (outside the plan, report only): at the object crossing step, is the position term (> 0.10 m) or orientation term (> threshold) over; same split for the pelvis.
+stages/evaluate/override_config_check.py	Checks whether the config overrides of eval_playback_override.py miss any key (stdlib only; runs directly on the training host, no container).
+stages/evaluate/pack_tier.sh	Packs one tier's exports into a submission CSV with the official packer, then runs the official uploader with --dry-run for validation and read-only precheck (Mac, repo root). No upload.
+stages/evaluate/palm_ref_gap.py	How far the robot palms are from the reference palms in a diagnosis rollout (numpy only; reads diag_rollout.py --palms npz; in container; reports without judging).
+stages/evaluate/playback_analysis.sh	Analysis chain for the playback speed comparison (plan agent-doc/plan-playback-2026-09-28.md version 2): per-frame diagnosis of the last three checkpoints of both arms on one buffer.
+stages/evaluate/playback_compare.py	Verdict for the playback speed comparison (reads summary_json lines in diagnosis reports only, stdlib only, runs on any machine).
+stages/evaluate/playback_refcheck.py	Reference check for the playback speed comparison (stdlib only): compares two static_baseline.py outputs for one sequence, per-frame playback versus real-time playback.
+stages/evaluate/policy_viewer.py	Views FlashCHORD policy rollouts in the Newton viser / rerun viewer (wraps the official view_policy.py; runs in the flash_chord container under /workspace).
+stages/evaluate/pull_submission.sh	Pulls what packing needs from a training machine to the Mac (Mac, repo root). Plan agent-doc/plan-submission-exports-2026-10-02.md section 3.4.
+stages/evaluate/ref_contact_window.py	Contact flags and object displacement over a frame range in one retargeted reference (in container via scripts/dev/in-flash-chord, CPU only, reads reference parquet; reports without judging).
+stages/evaluate/ref_early_motion.py	Post-hoc diagnosis (outside the plan, report only): how much the reference object moves by itself in the first frames, and the frame of first contact (in container, numpy, pyarrow). No GPU.
+stages/evaluate/ref_hand_survey.py	Hand inventory of all references in one tier (retargeted motion parquet) (in container via scripts/dev/in-flash-chord, numpy and pyarrow only, read-only; reports without judging).
+stages/evaluate/ref_pair_diff.py	Frame-by-frame comparison of two retargeted references (motion_v1 parquet, one row per frame) (in container via scripts/dev/in-flash-chord, reads two references only, no ground truth).
+stages/evaluate/ref_start_height.py	Height of the reference object in the first frames and the support surface setting this run actually uses (in container, needs numpy, pyarrow). Read-only, no GPU.
+stages/evaluate/relay_t1x.sh	Tier 1 extra candidates: gathers new candidates with export ok from a variant A segment onto ml40 and builds the input directory for this per-episode selection on ml40.
+stages/evaluate/replay_diff.py	Did the changed reference actually reach the simulation (in container via scripts/dev/in-flash-chord, CPU only; Q0b of plan agent-doc/plan-t12ref-2026-10-20.md).
+stages/evaluate/residual_head_norm.py	Size of the output head in a checkpoint (tensors whose last dimension equals the action dimension) (in container via scripts/dev/in-flash-chord, CPU only; read-only, report only).
+stages/evaluate/residual_sat.py	Does the trained policy saturate its residual during playback (in container via scripts/dev/in-flash-chord, CPU only; reads diag_rollout.py --actions npz; reports without judging).
+stages/evaluate/retrain_switch.py	Whether a retrained run replaces the current one (same form as criterion 5; training machine, repo root, stdlib only; reads evaluation JSON only, no ground truth).
+stages/evaluate/rollout_object_error.py	Per-frame position error between the simulated and reference object in the 1-world export (in container via scripts/dev/in-flash-chord, CPU only, reads export parquet; report only).
+stages/evaluate/rollout_object_start.py	Does the object move by itself before first contact in a smoke rollout (in container via scripts/dev/in-flash-chord, CPU only; reads diag_rollout.py npz; reports without judging).
+stages/evaluate/rotate_frefs_t3.py	Global rotation of Tier 3 frame references: rotates frame ref poses by R about the world origin (= main camera center) and saves to a new directory (Mac, needs numpy, pyarrow).
+stages/evaluate/runtime_pin_facts.sh	Fact extracts after the organizers updated the kit on 10/1 (Mac, read-only: two local kits plus gh api for upstream source). Evidence for the decision on the three organizer questions.
+stages/evaluate/seed_gate.py	Gate before adding the next seed (training machine, repo root, stdlib only, reads saved evaluations and exports). Plan agent-doc/plan-ep25-sweep-seeds-2026-10-18.md section 3.
+stages/evaluate/sel_4096_totals.py	4096-world totals for a per-episode selection list (stdlib only; training machine, repo root, reads eval_<steps>_w4096.json in candidate directories).
+stages/evaluate/select_t1.py	Tier 1 per-episode checkpoint selection: scores each candidate's 1-world export, picks one per episode by registered rules, packs the chosen 30 into a submission CSV (in container).
+stages/evaluate/select_t1.sh	Scoring, selection, and packing for Tier 1 per-episode selection (ml40, repo root). Plan agent-doc/plan-t1-per-episode-select-2026-10-08.md version 2.
+stages/evaluate/select_t1_compare.py	Tier 1 per-episode selection: compares a selection after adding new candidates with the previous one item by item (stdlib only, host python3). Plan agent-doc/plan-t1-r3x-2026-10-08.md section 4.
+stages/evaluate/select_t2.py	Tier 2 per-episode run selection by rule B (Mac, stdlib only, reads saved results). Plan agent-doc/plan-t2-select-b-2026-10-12.md section 2 step 2.
+stages/evaluate/site_media_exo.sh	SOP task overview human demo clips: exo video (byte-identical across tiers, 0 diffs in the 9/30 cmp; reads tier_2 only) to 2x speed, 640 wide, H.264 CRF 28, no audio, faststart.
+stages/evaluate/site_task_table.py	Task table for the SOP page task overview (on a training machine, stdlib only): one row per episode.
+stages/evaluate/stage_t1_candidates.sh	Tier 1 per-episode selection: copies candidate files with export ok on this machine to a staging directory, to gather on ml40 via the Mac pipe (training machine, repo root, read-only).
+stages/evaluate/static_bar_from_rollout.py	ADD-AUC for an object that stays at its frame 0 reference pose, from the diag_rollout.py npz (the Day 2 static baseline). In the FlashCHORD container, CPU only.
+stages/evaluate/static_baseline.py	Object-never-moves baseline and reference rotation profile (in the FlashCHORD container, read-only).
+stages/evaluate/submission_check.py	Pre-submission check of both tiers' CSVs (plan agent-doc/plan-submission-check-2026-10-03.md version 2: parts of criteria C1–C5 checkable locally, report-only R1–R3). Mac, repo root, read-only.
+stages/evaluate/submission_check_remote.sh	Server-side part of the pre-submission check (plan agent-doc/plan-submission-check-2026-10-03.md section 4): training machine, repo root, read-only, stdlib only.
+stages/evaluate/submission_kit_facts.sh	Source extracts on Track 2 evaluation rules from the official submission kit (released by email 2026-09-28) (Mac, read-only; upstream patches read via gh api).
+stages/evaluate/submission_rules_facts.sh	Pre-submission checks R5, R6 (plan agent-doc/plan-submission-check-2026-10-03.md): Mac, repo root, read-only.
+stages/evaluate/t12ctl_chain.sh	t12ctl chain (on ml40, repo root, in tmux; plan agent-doc/plan-t12ctl-2026-10-20.md version 1 section 1).
+stages/evaluate/t12fall_chain.sh	t12fall diagnosis chain (on ml40, repo root, in tmux; plan agent-doc/plan-t12fall-2026-10-20.md version 2 section 1).
+stages/evaluate/t12own_chain.sh	t12own chain (on ml40, repo root, in tmux; C3 in the execution record of plan agent-doc/plan-t12ctl-2026-10-20.md).
+stages/evaluate/t12ref_chain.sh	t12ref chain (on ml40, repo root, in tmux; plan agent-doc/plan-t12ref-2026-10-20.md version 2 section 1).
+stages/evaluate/t12replay_chain.sh	t12replay diagnosis chain (on ml40, repo root, in tmux; plan agent-doc/plan-t12replay-2026-10-20.md version 2 section 1).
+stages/evaluate/t12sat_chain.sh	t12sat chain (on ml40, repo root, in tmux; plan agent-doc/plan-t12sat-2026-10-20.md section 1).
+stages/evaluate/t1_contact_window.py	Rotation breakdown in a short window after first contact in the Tier 1 reference (in container via scripts/dev/in-flash-chord, CPU only; reads only the Tier 1 retargeted reference).
+stages/evaluate/t1_gap.py	Gap between Tier 1 and the two teams on the leaderboard: how much each metric is short, and how many failed episodes must be fixed to close it.
+stages/evaluate/t1_grasp_consistency.py	How much a grasped object moves in the hand in the Tier 1 reference (in container via scripts/dev/in-flash-chord, CPU only; reads only the Tier 1 retargeted reference).
+stages/evaluate/t1_metric_optimal.py	Per-metric optimal combination of Tier 1 per-episode candidates: uses only the per-candidate export scores already computed by select_t1.py (--out-json); no rescoring, no packing.
+stages/evaluate/t1_static_floor.py	Tier 1: MPPE / SP-SR / MP-SR per episode by the official formula if the object never moves (stays at its frame 0 pose), side by side with the submitted 1-world export.
+stages/evaluate/t1hard_diag.sh	Hand diagnosis for five hard Tier 1 episodes (item 2 of agent-doc/experiments/2026-10-30-t1hard-diag.md; repo root, a few GPU minutes per episode; reads checkpoints only, no training).
+stages/evaluate/t2_static_floor.py	Tier 2: MPPE / SP-SR / MP-SR per episode by the official formula if the object stays at frame 0, against Tier 2's own object trajectory (clean room: tier_guard on).
+stages/evaluate/t2fc_readout.sh	t2fc readout (ml40, repo root; plan agent-doc/plan-t2fc-2026-10-20.md section 1 steps 4, 6): adds 4096-world evaluation dumps for a set of runs (fc_eval_dump.sh, 8c778f9 copy).
+stages/evaluate/t3_align_whatif.py	Tier 3 episodes with wrong frame 0 orientation: projected full-episode error under each alignment option (in container via scripts/dev/in-flash-chord, CPU only; needs numpy, pyarrow).
+stages/evaluate/t3_dir_swap.py	Builds the Tier 3 submission trajectory directory: copies the base directory (last submitted 30 episodes), swaps given episodes for new exports, checks each (Mac, repo root, stdlib only).
+stages/evaluate/t3_frame0_table.py	Frame 0 orientation table and B2 branch choice for the Tier 3 reference (in container, CPU only; numpy, pyarrow). Plan agent-doc/plan-t3b2-2026-10-28.md version 2.1 step 1, criterion T0, B2 rule.
+stages/evaluate/t3_lost_classify.py	Splits lost-tracking Tier 3 episodes by cause (Mac, stdlib only, saved records): hard motion (also fails in Tier 2, mostly falls while walking) or reconstruction issue (works in Tier 2 only).
+stages/evaluate/t3_onset_evidence.py	Tier 3 best_hm: failure onset versus the per-frame evidence table (Mac, env with numpy). Plan agent-doc/plan-frame-onset-2026-10-14.md section 3 step 0, section 4.
+stages/evaluate/t3_refdiff_batch.sh	Compares two retargeted references per list row (training machine, repo root; each row runs stages/evaluate/ref_pair_diff.py in a one-off FlashCHORD container, no GPU, read-only).
+stages/evaluate/t3_resub_table.py	Table reader for the Tier 3 resubmission assessment (plan agent-doc/plan-t3resub-2026-10-29.md section 1 D1, D2, D4). Reads saved records only, uses no Tier 1 data.
+stages/evaluate/t3_static_floor.py	Tier 3: MPPE / SP-SR / MP-SR / ADD-AUC against our own reconstructed reference if the object stays at frame 0 (in container via scripts/dev/in-flash-chord; tier_guard.forbid_tier1 on).
+stages/evaluate/t3_switch_table.py	Per-episode Tier 3 swap table: 4096-world values of current and candidate runs (gb3_switch.py records) and 1-world export values (two export JSONs) (Mac, repo root, stdlib only).
+stages/evaluate/t3b2_after.sh	Follow-on chaining for t3b2 steps 2 and 3 (ml40 repo root, under setsid; stops no process). Plan agent-doc/plan-t3b2-2026-10-28.md step 2 items 6, 7, step 3.
+stages/evaluate/t3b2_frame0.sh	t3b2 step 1: control and formal run of the frame 0 orientation table (ml40 repo root, under setsid; CPU only, in container). Plan agent-doc/plan-t3b2-2026-10-28.md criterion T0 and B2 rule.
+stages/evaluate/t3b2_reexport.sh	t3b2: re-evaluate and re-export existing checkpoints on the new reference (ml40 repo root, under setsid). Plan agent-doc/plan-t3b2-2026-10-28.md step 2 item 6, step 3 item 4.
+stages/evaluate/t3b2_t0_compare.py	Item-by-item comparison for t3b2 criterion T0 (Mac, stdlib only). Plan agent-doc/plan-t3b2-2026-10-28.md criterion T0.
+stages/evaluate/t3g5_r1.py	Per-episode check of t3g5 criterion R1 (stdlib only; plan agent-doc/plan-t3g5-2026-10-21.md version 2 section 2).
+stages/evaluate/t3g5_r2_gate.sh	Gate for t3g5 criterion R2 (training machine, repo root, in tmux). Plan agent-doc/plan-t3g5-2026-10-21.md criterion R2 and the 10/21 08:1x execution record.
+stages/evaluate/t3g5_readout.sh	Readout for one t3g5 segment (called by arm_t3g5.sh via run_after_log.sh after the evaluation chain). Plan agent-doc/plan-t3g5-2026-10-21.md version 2 section 1 steps 3–4, criteria R1/R2.
+stages/evaluate/t3static_select.py	Episode selection table for t3static (Mac, stdlib only): plan agent-doc/plan-t3static-2026-10-21.md section 2 S3 (version 2); rules committed before the table.
+stages/evaluate/termination_facts.sh	How the FlashCHORD evaluator handles non-finite and terminated worlds (Mac, read-only, reads upstream source via gh api).
+stages/evaluate/test_align_frefs_t3.py	Tests for stages/evaluate/tier1_frame0.py and align_frefs_t3.py: guard plan agent-doc/plan-t3align-2026-10-21.md criteria A0, A1 and review changes 1, 3, 5.
+stages/evaluate/test_assemble_t3_results.py	Tests for assemble_t3_results.py (stdlib only, run with python3 on the Mac). Plan agent-doc/plan-t3pack-2026-10-29.md section 1 item 3 and review NIT.
+stages/evaluate/test_blowup_rollout.py	Behavior tests for blowup_rollout.py (no contract ID yet: run spec not written). Needs numpy: uv on the Mac, directly on the mf4090 host and in the FlashCHORD container.
+stages/evaluate/test_board_diff.py	Tests for board_diff.py: guard the comparison rules in section 2 of agent-doc/board-watch-2026-10-19.md. Stdlib only.
+stages/evaluate/test_case_clip.py	Tests for the case_clip.py world selection rule (no GPU): guard section 4 of agent-doc/plan-site-cases-video-2026-10-08.md (per class the world nearest the median; empty classes reported).
+stages/evaluate/test_check_export.py	Behavior tests for check_export.py (no contract ID yet: run spec not written). Needs numpy, pyarrow.
+stages/evaluate/test_check_t2_select.py	Tests for check_t2_select.py: guard the selected-run check in section 3 of agent-doc/plan-t2-select-b-2026-10-12.md version 2 (review M1). Stdlib only.
+stages/evaluate/test_ckpt_sweep_pick.py	Tests for ckpt_sweep_pick.py, seed_gate.py, dump_knock.py, ckpt_sweep.sh: guard section 2 of agent-doc/plan-ep25-sweep-seeds-2026-10-18.md (definition of a qualified evaluation, ...).
+stages/evaluate/test_compat_8c778f9.py	Behavior tests for compat_8c778f9.sh (with compat_expect.sh, scripts/dev/record, chain_after.sh) (no contract ID yet: run spec not written). Stdlib only.
+stages/evaluate/test_contact_onset_table.py	Tests for contact_onset_table.py (no contract ID yet; plan agent-doc/plan-c10-extend-2026-10-16.md section 3.1). Needs numpy and pyarrow (run in the flash_chord container).
+stages/evaluate/test_day2_compare.py	Synthetic tests for day2_compare.py (stdlib only, run directly on the Mac; no contract ID: the verdict tool is not in the delivery chain).
+stages/evaluate/test_diag2_chain.py	Behavior tests for diag2_chain.sh (with scripts/dev/record) (no contract ID yet: run spec not written). Stdlib only.
+stages/evaluate/test_diag_onset.py	Synthetic data tests for diag_onset.py (no contract ID: diagnosis tool, plan agent-doc/plan-t2dg-2026-10-20.md section 2 D1b). Needs numpy; run in container.
+stages/evaluate/test_diag_phase.py	Tests for diag_phase.py (no contract ID yet: run spec not written). Needs numpy ≥ 2 (np.trapezoid); uv on the Mac, FlashCHORD container on servers.
+stages/evaluate/test_diag_report.py	Synthetic data tests for diag_report.py and diag_triggers.py (numpy only; no contract ID: diagnosis tools are not in the delivery chain).
+stages/evaluate/test_dump_chain.py	Behavior tests for dump_chain.sh (with scripts/dev/record) (no contract ID yet: run spec not written). Stdlib only; needs bash 4, runs on mf4090.
+stages/evaluate/test_ep7_ckpt_eval.py	Behavior tests for ep7_ckpt_eval.sh (with scripts/dev/record, stages/policy/ckpt_nonfinite.py) (no contract ID yet: run spec not written). Stdlib only.
+stages/evaluate/test_eval_playback_override.py	Tests for eval_playback_override.override_config (stdlib only, run directly on the Mac; no contract ID: diagnosis tool not in the delivery chain).
+stages/evaluate/test_eval_table.py	Tests for eval_table.py (no contract ID yet: run spec not written). Stdlib only.
+stages/evaluate/test_export_after_eval.py	Behavior tests for export_after_eval.sh: guard section 3 of agent-doc/plan-t1-r3x-2026-10-08.md (export only after the evaluation chain succeeds; no contract ID). Stdlib only, Mac and servers.
+stages/evaluate/test_export_chain.py	Behavior tests for export_chain.sh (with check_export.sh, scripts/dev/record) (no contract ID yet: run spec not written). Stdlib only.
+stages/evaluate/test_export_map.py	Tests for export_map.py (no contract ID yet: run spec not written). Stdlib only. Plan agent-doc/plan-submission-exports-2026-10-02.md section 3.1.
+stages/evaluate/test_fail_onset.py	Tests for fail_onset.py (plan agent-doc/plan-frame-onset-2026-10-14.md section 3 step 0, section 4). Needs numpy, pyarrow, and pytest.
+stages/evaluate/test_fall_mechanism.py	Tests for fall_mechanism.first_over (no contract ID: diagnosis tool, plan agent-doc/plan-t12fall-2026-10-20.md). Needs numpy.
+stages/evaluate/test_fall_order.py	Tests for fall_order.py: synthetic per-step errors cover object first, pelvis first, simultaneous, too few fallen worlds, stop on a failed gate, the freeze window, and the unified object threshold.
+stages/evaluate/test_fall_order_one.py	Tests for fall_order_one.py: the single-run driver changes only the entry point; gates and judging follow fall_order.py (plan agent-doc/plan-first-place-2026-10-14.md section 2 option C).
+stages/evaluate/test_fc_export.py	Behavior tests for fc_export.sh (no contract ID yet: run spec not written). Stdlib only, runs on Mac and training machines.
+stages/evaluate/test_frame_ref_check.py	Behavior tests for frame_ref_check.py (no contract ID yet: run spec not written). Needs numpy, pyarrow.
+stages/evaluate/test_frefs_from_motion_t3.py	Tests for frefs_from_motion_t3.py (no contract ID yet: run spec not written; plan agent-doc/plan-t3b2-2026-10-28.md step 1 item 4). Needs numpy, pyarrow.
+stages/evaluate/test_frefs_t3_match.py	Tests for frefs_t3_match.py (no contract ID yet: run spec not written; plan agent-doc/plan-r3o-2026-10-15.md 2.4.1). Stdlib only.
+stages/evaluate/test_gb3_switch.py	Tests for gb3_switch.py (no contract ID yet; plan agent-doc/plan-t3-gb3-switch-2026-10-17.md criterion G2). Stdlib only, runs on the Mac.
+stages/evaluate/test_kfix_reexport.py	Behavior tests for kfix_reexport.sh (no contract ID yet: run spec not written; plan agent-doc/plan-t3-kfix-2026-10-16.md, evaluator version and two checks).
+stages/evaluate/test_kfix_reexport_table.py	Tests for kfix_reexport_table.py (no contract ID yet: run spec not written; plan agent-doc/plan-t3-kfix-2026-10-16.md criterion 5). Stdlib only, runs on the Mac.
+stages/evaluate/test_make_frame_references.py	Tests for make_frame_references.py (no contract ID yet: run spec not written). Needs numpy, pyarrow; with pandas installed, also reads back with the kit packer's own functions.
+stages/evaluate/test_make_frame_refs_t3.py	Tests for make_frame_refs_t3.py (no contract ID yet: run spec not written; plan agent-doc/plan-r3o-2026-10-15.md 2.4.1). Needs numpy, pyarrow; with pandas installed, ...
+stages/evaluate/test_merge_frefs_t3.py	Tests for merge_frefs_t3.py (no contract ID yet: run spec not written; plan agent-doc/plan-t3-kfix-2026-10-16.md option 4). Stdlib only: the merge tool checks only sha256, ...
+stages/evaluate/test_onset_terms.py	Tests for onset_terms.py: the crossing threshold is adjustable, and default behavior matches fall_order.crossings (plan agent-doc/plan-r3o-2026-10-15.md step 0, review item 2).
+stages/evaluate/test_pack_tier.py	Tests for pack_tier.sh (no contract ID yet: run spec not written). Stdlib only. Plan agent-doc/plan-submission-exports-2026-10-02.md section 3.5.
+stages/evaluate/test_playback_compare.py	Synthetic tests for playback_compare.py (stdlib only, run directly on the Mac; no contract ID: diagnosis tool not in the delivery chain).
+stages/evaluate/test_playback_refcheck.py	Tests for playback_refcheck.py (stdlib only, run directly on the Mac; no contract ID: diagnosis tool not in the delivery chain).
+stages/evaluate/test_retrain_switch.py	Tests for retrain_switch.py (no contract ID yet; criteria of plan agent-doc/plan-t3-kfix-retrain-2026-10-16.md). Stdlib only.
+stages/evaluate/test_rotate_frefs_t3.py	Tests for rotate_frefs_t3.py (no contract ID yet: run spec not written; purpose in fact 6 of agent-doc/experiments/2026-10-16-t3-world-frame.md). Needs numpy, pyarrow.
+stages/evaluate/test_select_t1.py	select_t1.py rule tests: guard agent-doc/plan-t1-per-episode-select-2026-10-08.md section 4 v2 (MP-SR, SP-SR, then AUC / 0.3780 − MPPE / 25.1706; ties keep the submitted one).
+stages/evaluate/test_select_t1_compare.py	Tests for select_t1_compare.py: guard selection gates C1–C5 in section 4 of agent-doc/plan-t1-r3x-2026-10-08.md. Stdlib only.
+stages/evaluate/test_select_t2.py	Tests for select_t2.py: guard agent-doc/plan-t2-select-b-2026-10-12.md section 2 step 2 and section 3 (rule B three-level ties, candidate eligibility, the submitted run must be eligible).
+stages/evaluate/test_t3_frame0_table.py	Tests for t3_frame0_table.py pure functions (no contract ID yet; plan agent-doc/plan-t3b2-2026-10-28.md version 2.1 step 1 item 4, B2 rule). Needs numpy, pyarrow.
+stages/evaluate/test_t3_onset_evidence.py	Tests for t3_onset_evidence.py (plan agent-doc/plan-frame-onset-2026-10-14.md section 3 step 0, section 4). Needs numpy and pytest; the script runs in a subprocess.
+stages/evaluate/test_t3g5_r1.py	Tests for stages/evaluate/t3g5_r1.py: guard the criterion R1 threshold of plan agent-doc/plan-t3g5-2026-10-21.md (SP-SR ≥ 0.5 and MPPE ≤ 10 cm).
+stages/evaluate/test_t3g5_r2_gate.py	Tests for stages/evaluate/t3g5_r2_gate.sh: guard criterion R2 of plan agent-doc/plan-t3g5-2026-10-21.md (if ≥ 5 of 7 segment A episodes fail to track, stop the segment B wait, else release).
+stages/evaluate/test_trial_attribution.py	Tests for trial_attribution.py: check the mean and attribution conditions for segments 6–8 on synthetic --by-stage output.
+stages/evaluate/test_trial_verdict.py	Tests for trial_verdict.py (guard the criteria in section 4 of plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2; run spec not written, no contract ID yet).
+stages/evaluate/tier1_frame0.py	The only place in Tier 3 that touches Tier 1: reads only frame 0 of one Tier 1 episode (needs pyarrow). Plan agent-doc/plan-t3align-2026-10-21.md section 1 item 1, criterion A0.
+stages/evaluate/track2_rank_sum.py	Computes the Track 2 overall rank by the official FAQ rule: sum the ranks of each metric, lowest sum wins (Mac, stdlib only; reads one leaderboard snapshot record).
+stages/evaluate/track_split.py	Direction of the pelvis deviation when zero-residual playback loses the reference (in container via scripts/dev/in-flash-chord, CPU only; reads diag_rollout.py --bodies npz; report only).
+stages/evaluate/train_term_table.py	How episodes end for each run at the end of training (training machine, host python3 is enough, reads the local W&B summary only; reports without judging).
+stages/evaluate/trajopt_a0.sh	trajopt A0 (plan agent-doc/plan-trajopt-2026-10-26.md version 2 sections 1, 2): evaluates a zero-residual checkpoint at 4096 worlds, real-time and per-frame playback, reads the pelvis failure ratio.
+stages/evaluate/trajopt_c_chain.sh	trajopt segment C chain (on mf4090, repo root, in tmux; plan agent-doc/plan-trajopt-2026-10-26.md section 5 version 3). Follows stages/evaluate/t12sat_chain.sh, adapted to mf4090.
+stages/evaluate/trial_attribution.py	Step 3 recipe trial attribution (report only): reads wandb_local_history.py --by-stage output, compares variant A and baseline in segments 6–8 (VOC = 0) on object termination and progress.
+stages/evaluate/trial_verdict.py	Verdict for the step 3 recipe trial (plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2 section 4). Stdlib only, runs on the Mac and training hosts.
+stages/evaluate/verdict.py	Draws conclusions on evaluation results by pre-registered criteria (reads text results under results/ only, stdlib only, runs on any machine).
+stages/policy/arm_after.sh	Waits for the previous segment's long chains to end and the GPU to free up, runs a pre-command, checks the previous segment finished, then starts the next (training machine, background via setsid).
+stages/policy/arm_box_chains.sh	Starts three waiting tmux sessions for the box retraining (training machine, repo root). Plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md section 4.4.
+stages/policy/arm_nfg_chains.sh	Starts two tmux sessions for ep7 retraining with non-finite guards (training machine, repo root). Plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md version 5 B.5.
+stages/policy/arm_r3x_chain.sh	Starts three tmux sessions for the Tier 1 variant A extra runs (ep0, ep15, ep5, seeds 42 and 43) (on mf4090, repo root). Plan agent-doc/plan-t1-r3x-2026-10-08.md.
+stages/policy/arm_r3x_rerun.sh	Reruns ep5 seed 42 unchanged (on mf4090, repo root). Plan agent-doc/plan-t1-r3x-2026-10-08.md section 7.
+stages/policy/arm_seg.sh	Starts the chain for one queue segment (repo root, tmux): config check, precheck, chain dry run (starts only on DRYRUN_OK), then start (arm_var_chain.sh <segment>, needs ARMED).
+stages/policy/arm_smoke_dense.sh	Smoke run with dense checkpoint saves, end to end (on mf4090, repo root, in tmux; the Mac only starts it). Generalized from arm_t2sd.sh (plan agent-doc/plan-t2sd-2026-10-19.md).
+stages/policy/arm_t12lift.sh	t12lift end to end (on ml40, repo root, in tmux; plan agent-doc/plan-t12lift-2026-10-20.md version 2 section 1).
+stages/policy/arm_t2fc.sh	t2fc end to end (on ml40, repo root, in tmux; plan agent-doc/plan-t2fc-2026-10-20.md section 1 steps 4–6).
+stages/policy/arm_t2sd.sh	t2sd end to end (on mf4090, repo root, in tmux; the Mac only starts it). Plan agent-doc/plan-t2sd-2026-10-19.md section 1 (review item 2: the training machine creates the stop marker).
+stages/policy/arm_t3g4.sh	t3g4 end to end (on mf4090, repo root, in tmux; the Mac only starts it). Plan agent-doc/plan-t3g4-2026-10-19.md section 1 steps 2–4, criterion G0.
+stages/policy/arm_t3g5.sh	Starts the t3g5 chain (training machine, repo root, in tmux; the Mac only starts it). Plan agent-doc/plan-t3g5-2026-10-21.md version 2 section 1 steps 2–3, criterion R0.
+stages/policy/arm_trial_chains.sh	Starts four tmux sessions for the step 3 recipe trial (training machine, repo root). Plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2 sections 3, 7.
+stages/policy/arm_var_chain.sh	Starts three tmux sessions for one variant A chain segment (training machine, repo root). Parameterized arm_r3x_chain.sh with the same checks. Segment names start with the list name.
+stages/policy/assert_cfg.py	Checks the config expanded by `--cfg job --resolve` by full key path (runs/cfgcheck/<run>.yaml written by fc_config_check.sh). Runs in the FlashCHORD container (needs PyYAML).
+stages/policy/cfg_diff.py	Compares two YAML outputs of `--cfg job --resolve`: lists all differing keys and marks differences not in the allow list.
+stages/policy/chain_after.sh	Waits until the previous segment is evaluated and its training qualifies, then starts the next training chain (training machine, repo root, tmux). Plan agent-doc/plan-t2-batch-2026-10-01.md section 4.
+stages/policy/chain_health_remote.sh	Health record for a batch of runs: lists the lines for R1–R3 in plan section 4; read-only, changes no files, starts no containers. Sent from the Mac over stdin; no repo sync needed.
+stages/policy/chain_preflight.sh	Environment check before starting a chain (training machine, repo root; no GPU, no container). Plan agent-doc/plan-t2-batch-2026-10-01.md section 7 step 3.
+stages/policy/chain_status_remote.sh	Read-only training machine snapshot: key training and evaluation log lines per batch segment, watcher outcomes, W&B summaries of finished runs, active runs, GPU, disk, chain markers.
+stages/policy/check_inputs.py	Checks training inputs before training (in the FlashCHORD container): parquet is readable, frame count and fps, and referenced asset paths exist in the container.
+stages/policy/ckpt_latest.py	Prints the step of the latest complete, usable FlashCHORD training state (state_<steps>.safetensors) under <run dir>.
+stages/policy/ckpt_nonfinite.py	Scans FlashCHORD policy checkpoints for non-finite parameters (on a training machine, stdlib only).
+stages/policy/day2_train_chain.sh	Day 2 training chain (plan agent-doc/plan-day2-2026-09-28.md version 2): smoke run then formal training per expectation table row; one failure does not affect the rest. Training machine, tmux.
+stages/policy/deps_freeze.py	Lists all dependencies of the Python environment in the image (name==version, sorted); fc_run.sh uses its sha256 as the dependency freeze fingerprint (ADR-00003).
+stages/policy/derive_r3o_rows.py	Derives r3o (variant A plus object orientation term) smoke and formal queues, expectation table, and export list from a run's row in an existing queue, one segment at a time (stdlib only).
+stages/policy/diag_importer_gate.py	Importer check for the diagnosis queue: validity gate from appendix A.3 of plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md (on a training machine, stdlib only).
+stages/policy/diag_verdict.py	Verdict on the ml40 diagnosis control per plan appendix A.3 (version 5, registered) (Mac, stdlib only, reads saved results).
+stages/policy/divergence_code_facts.sh	Upstream code extracts on the ep1, ep7 training divergence (Mac, read-only, reads v0.4.0 of the training image via gh api). Each line has file and line number, for checking with jev.
+stages/policy/ep7_code_facts.sh	Upstream code extracts on the formal ep7 box training divergence (#185 geometry) (Mac, read-only, reads v0.4.0 via gh api). Each line has file and line number, for checking with jev.
+stages/policy/eval_check.py	Checks a FlashCHORD evaluation JSON (metrics_output of scripts/evaluate_policy.py): non_finite_worlds is empty and the four leaderboard metrics are finite. Stdlib only.
+stages/policy/eval_compare.py	Compares key metrics of two FlashCHORD evaluation JSONs (stdlib only).
+stages/policy/eval_summary.py	Prints a summary of a FlashCHORD evaluation JSON (metrics_output of scripts/evaluate_policy.py) (stdlib only).
+stages/policy/fc_config_check.sh	Pre-training check: for each queue row, gets the actual command from the fc_run.sh print mode and checks it in a container (no GPU).
+stages/policy/fc_eval.sh	Evaluates a run's policy with the FlashCHORD built-in evaluator (scripts/evaluate_policy.py) (on a training machine).
+stages/policy/fc_queue.sh	Runs the training jobs in a queue file line by line (on a training machine, tmux recommended).
+stages/policy/fc_run.sh	Host entry point for FlashCHORD training (on a training machine, in tmux): resume from checkpoints, W&B, run records, automatic retries.
+stages/policy/fc_run_watched.sh	Formal training with a divergence watcher (training machine, repo root; called in the formal stage of the training chain day2_train_chain.sh). Plan agent-doc/plan-t2-batch-2026-10-01.md.
+stages/policy/fc_src_check.py	Checks whether a flash_chord source copy (the kind V2D_FC_SRC mounts as /workspace) is the version it claims (training machine, repo root, stdlib only).
+stages/policy/fc_stop.sh	Deliberately stops a training run (no automatic retry): places a STOP marker first, then stops the container.
+stages/policy/fc_train.sh	FlashCHORD G1 training. Runs inside the FlashCHORD container, called through scripts/dev/in-flash-chord.
+stages/policy/find_eval_script.sh	Checks whether the official evaluation script (eval_robotic_grounding.py and others) is public: all HF dataset files and commits, all upstream GitHub branches, code search, release assets.
+stages/policy/ft_chain.sh	Short chain for continued fine-tuning (mf4090, repo root, in tmux). Plans agent-doc/plan-t2ft-2026-10-26.md (t2ft) and agent-doc/plan-t2ft2-2026-10-26.md (t2ft2).
+stages/policy/gate_skip_flag.sh	Skip gate for the V2D_PRE_CMD of arm_after.sh: waits up to <minutes> minutes. Blocks (exit 1) if <marker file> appears, else passes (exit 0).
+stages/policy/gate_verdict.sh	Verdict gate for the V2D_PRE_CMD of arm_after.sh: waits for the verdict record. Passes (exit 0) only if the last line is an allowed overall verdict, else exit 1.
+stages/policy/make_batch_queue.py	Generates the expectation table and smoke and full queues for one batch training segment by episode index (per-frame playback, official G1 recipe; stdlib only, runs on the Mac).
+stages/policy/make_clone_queue.py	Derives r3o segments from the queue lines of existing runs in the list (plan agent-doc/plan-t1r3o-2026-10-31.md version 3).
+stages/policy/make_copy_queue.py	Copies queue lines from trained runs and changes only the reference: Tier 3 dynamics-fix pilot (plan agent-doc/plan-t3dyn-pilot-2026-10-14.md). Stdlib only.
+stages/policy/make_diag_support.py	Generates diagnostic motion directories with only the support surface changed (stdlib only; plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A.3).
+stages/policy/make_fc_src_8c778f9.sh	Builds a flash_chord source copy byte-identical to upstream 8c778f905c (eval runtime pinned by the organizers' 10/1 kit). Mounted at /workspace via V2D_FC_SRC for export and evaluation.
+stages/policy/make_patched_fc_src.sh	Builds a flash_chord source copy of v0.4.0 plus upstream #185 (8c778f9: box support imported as size x scale). Diagnostic runs mount it at /workspace via V2D_FC_SRC.
+stages/policy/make_r3x_queue.py	Generates the expectation table, smoke queue, full queue and export list for the Tier 1 variant A rerun (ep0, ep15, ep5, seed 42 and 43, mf4090). Stdlib only.
+stages/policy/make_trial_queue.py	Generates the expectation table, smoke and full queues and trial list for the step 3 recipe trial (plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2, section 3). Stdlib only.
+stages/policy/make_var_queue.py	Generates the expectation table, smoke queue, full queue and export list for the variant A list, one segment at a time. Stdlib only.
+stages/policy/mount_check.py	Mount check for box runs: training mounts the #185 patch copy and evaluation mounts the 8c778f9 copy (training host, repo root, stdlib only).
+stages/policy/nfg_env_probe.py	Non-finite guard GPU gates T1, T1b, T2a-T2d, T2n and K1 (guards POLICY-I001, POLICY-I002, POLICY-I003 in docs/contracts/policy.md).
+stages/policy/nfg_gpu_gates.sh	Non-finite guard GPU gates (B.4 of plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md version 5). Training host, repo root, about 40 minutes, run in tmux or setsid.
+stages/policy/nfg_test_kernels.py	Env-side component tests of the non-finite guard patch (CPU K1 and K2; guards POLICY-I001, POLICY-I002, POLICY-I003). Runs on CPU in the FlashCHORD container with the patched copy mounted.
+stages/policy/nfg_test_learner.py	Learner-side component tests of the non-finite guard patch (K3; guards POLICY-I004, POLICY-I005, POLICY-I006). Runs JAX on CPU in the FlashCHORD container with the patched copy mounted.
+stages/policy/nfg_train_inject.py	Non-finite guard end-to-end gate T6 (guards POLICY-I006 in docs/contracts/policy.md; covers I001, I003, I004 end to end). Plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md.
+stages/policy/obs_block_nan_map.py	Maps non-finite indices of the input normalization statistics (486 dims) block by block onto the ReconBody observation layout (Mac, stdlib only, reads saved results only).
+stages/policy/oo_test_kernels.py	Component tests of the r3o object orientation term (guards POLICY-I007, I008, I009; plan agent-doc/plan-r3o-2026-10-15.md 2.1, review items 7 and 8). CPU in the FlashCHORD container.
+stages/policy/palm_frame_probe.py	Offset between the palm frame of the G1 reference and joint FK: per-frame playback vs resampling to real duration (runs in the FlashCHORD container, uses a little GPU).
+stages/policy/pick_pilot_sequences.py	Picks the Day 2 pilot sequences by pre-registered rules (stdlib only, reads text under results/).
+stages/policy/playback_facts.sh	Upstream facts for the playback speed comparison (Day 1b diagnostic trigger T2; unrelated to Tier 2): extracts matching lines of FlashCHORD source and config with line numbers.
+stages/policy/playback_official_sources.sh	Verbatim excerpts from official docs and release code on the speed at which the G1 reference plays back (answers: at what speed does the official evaluation play).
+stages/policy/policy_inputs.py	Lists all inputs that a policy checkpoint reads at evaluation and computes sha256 for each (training host, stdlib only).
+stages/policy/precheck_expect.sh	Pre-runs the training chain's forward check before the chain starts (same assertions as step 1 of stages/policy/day2_train_chain.sh). No training, no GPU. Training host, repo root.
+stages/policy/queue_after.sh	Runs a queue after another training chain ends (its runs/.chain-active-<name> marker is gone) and the GPU has no processes (training host, in tmux).
+stages/policy/queues/diag_ml40_ep7.txt	Plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A version 5; all on ml40. v040 lines set an empty V2D_FC_SRC= so a leftover shell value does not leak in.
+stages/policy/queues/diag_ml40_ep7_fp32.txt	Plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A version 5; all on ml40. v040 lines set an empty V2D_FC_SRC= so a leftover shell value does not leak in.
+stages/policy/queues/diag_ml40_ext4750.txt	Plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A version 5; all on ml40. v040 lines set an empty V2D_FC_SRC= so a leftover shell value does not leak in.
+stages/policy/queues/diag_ml40_ext4750_fp32.txt	Plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A version 5; all on ml40. v040 lines set an empty V2D_FC_SRC= so a leftover shell value does not leak in.
+stages/policy/queues/diag_ml40_p185_smoke.txt	Plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A version 5; all on ml40. v040 lines set an empty V2D_FC_SRC= so a leftover shell value does not leak in.
+stages/policy/queues/diag_ml40_trunc60m.txt	Plan agent-doc/plan-ep1-ep7-divergence-2026-09-30.md appendix A version 5; all on ml40. v040 lines set an empty V2D_FC_SRC= so a leftover shell value does not leak in.
+stages/policy/queues/l40n_t2l3.txt	Tier 2 AUC leaderboard: 4 more episodes, r3o seed 42, third host l40n (L40), buffer 10M (recipe as t2o3); segment t2l3: ep18, ep6; plan agent-doc/plan-t2auc3-2026-11-02.md.
+stages/policy/queues/l40n_t2l3b.txt	Tier 2 AUC leaderboard: 4 more episodes, r3o seed 42, third host l40n (L40), buffer 10M (recipe as t2o3); segment t2l3b: ep15, ep8; plan agent-doc/plan-t2auc3-2026-11-02.md.
+stages/policy/queues/l40n_t2l4.txt	Tier 2 AUC leaderboard, last round before the freeze: 6 remaining tracked episodes, recipe as t2l3 (r3o seed 42, l40n, 10M buffer); segment t2l4: ep5, ep22; plan agent-doc/plan-final-2026-11-03.md.
+stages/policy/queues/l40n_t2l4b.txt	Tier 2 AUC leaderboard, last round before the freeze: 6 remaining tracked episodes, recipe as t2l3 (r3o seed 42, l40n, 10M buffer); segment t2l4b: ep16, ep20; plan agent-doc/plan-final-2026-11-03.md.
+stages/policy/queues/l40n_t2l4c.txt	Tier 2 AUC leaderboard, last round before the freeze: 6 remaining tracked episodes, recipe as t2l3 (r3o seed 42, l40n, 10M buffer); segment t2l4c: ep29, ep27; plan agent-doc/plan-final-2026-11-03.md.
+stages/policy/queues/mf4090_batch1a.txt	Tier 1 batch batch1a (plan agent-doc/plan-batch1-tier1-2026-09-29.md): official G1 recipe, per-frame playback, 4M buffer (mf4090); ground-only sequences use scene.support=false.
+stages/policy/queues/mf4090_batch1b.txt	Tier 1 batch batch1b (plan agent-doc/plan-batch1-tier1-2026-09-29.md): official G1 recipe, per-frame playback, 4M buffer (mf4090); ground-only sequences use scene.support=false.
+stages/policy/queues/mf4090_box.txt	Box retraining (plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md): training mounts the #185 patch copy, official G1 recipe, per-frame playback, 4M buffer (mf4090); box support on.
+stages/policy/queues/mf4090_day1.txt	mf4090 (RTX 4090) Day 1: replay buffer reduced to 1M (the 4090 cannot hold the default 10M).
+stages/policy/queues/mf4090_day2.txt	Day 2 (plan agent-doc/plan-day2-2026-09-28.md version 2). Ground-only sequences use scene.support=false (the official support file is an empty Xform, so FlashCHORD cannot build the scene).
+stages/policy/queues/mf4090_nfg.txt	ep7 retraining on two tiers with the non-finite guard (plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md version 5 B.5): mounts v040_p185_nfg, seed 42, box support on, 4M buffer, keeps 4 states.
+stages/policy/queues/mf4090_night1.txt	Three full per-frame runs on mf4090 tonight (plan agent-doc/plan-mf4090-night-2026-09-29.md): ep21, the short one left from round 2, plus ep27 and ep3 in rule order from round 3.
+stages/policy/queues/mf4090_playback.txt	Playback speed comparison (Day 1b diagnostic trigger T2, unrelated to Tier 2), mf4090 full run: differs from Day 1 t1-ep20-w2048-cap1m-mf4090 only in real-duration playback.
+stages/policy/queues/mf4090_r3t1a.txt	Step 3 recipe trial segment A: variant A seed 42 for 5 trial episodes and control ep8 (plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2, Tier 1, mf4090). From make_trial_queue.py.
+stages/policy/queues/mf4090_r3t1bc.txt	Step 3 recipe trial segment BC: baseline seed 43 and variant A seed 43 per trial episode, only after a CONTINUE gate verdict (plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2).
+stages/policy/queues/mf4090_r3x.txt	Tier 1 variant A rerun: seed 42 and seed 43 for ep0, ep15, ep5 (plan agent-doc/plan-t1-r3x-2026-10-08.md, mf4090, 4M buffer). Generated by make_r3x_queue.py.
+stages/policy/queues/mf4090_t1hf.txt	Tier 1 lost-track episodes: base recipe with force closure weight 5 to 20 (fc20, no variant A), seed 42, mf4090, 4M buffer; segment t1hf: ep25, ep9; plan agent-doc/plan-t1hard-2026-10-31.md.
+stages/policy/queues/mf4090_t1hf2.txt	Tier 1 MPPE leaderboard: base recipe with force closure weight 5 to 20 (fc20, no variant A), mf4090, 4M buffer; segment t1hf2: ep1, ep4; plan agent-doc/plan-t1night-2026-11-01.md.
+stages/policy/queues/mf4090_t1hf2_s43.txt	Tier 1 MPPE leaderboard: base recipe with force closure weight 5 to 20 (fc20, no variant A), mf4090, 4M buffer; segment t1hf2_s43: ep9, seed 43; plan agent-doc/plan-t1night-2026-11-01.md.
+stages/policy/queues/mf4090_t1hp2.txt	Tier 1 MPPE leaderboard: ep1 base recipe, palm position termination 0.15 to 0.05 m (pt05, no variant A), seed 42, mf4090, 4M buffer; segment t1hp2: ep1; plan agent-doc/plan-t1ep1-2026-11-02.md.
+stages/policy/queues/mf4090_t1hp3.txt	Tier 1 MPPE leaderboard: ep1 base recipe, palm position termination 0.15 to 0.08 m (pt08, no variant A), seed 42, mf4090, 4M buffer; segment t1hp3: ep1; plan agent-doc/plan-t1ep1-2026-11-02.md.
+stages/policy/queues/mf4090_t1oa.txt	Tier 1 r3o pilot P1: control ep20 and 7 lost episodes, variant A plus object orientation term, seed 42 (mf4090, 4M buffer); segment t1oa: ep20, ep25, ep28, ep11; plan agent-doc/plan-r3o-2026-10-15.md.
+stages/policy/queues/mf4090_t1ob.txt	Tier 1 r3o pilot P1: control ep20 and 7 lost episodes, variant A plus object orientation term, seed 42 (mf4090, 4M buffer); segment t1ob: ep4, ep9, ep1, ep2; plan agent-doc/plan-r3o-2026-10-15.md.
+stages/policy/queues/mf4090_t1xa.txt	Tier 1 extra candidates: variant A seed 42 for the 7 episodes with pelvis ratio below 0.65 (mf4090, 4M buffer); segment t1xa: ep17, ep21, ep10, ep13, ep19, ep3, ep14; plan in agent-doc.
+stages/policy/queues/mf4090_t1xa2.txt	Tier 1 extra candidates: variant A seed 42 for 7 episodes with pelvis ratio below 0.65 (mf4090, 4M buffer); segment t1xa2: ep21, ep10, ep13, ep19, ep3, ep14; plan in agent-doc.
+stages/policy/queues/mf4090_t1xb.txt	Tier 1 baseline chase: variant A seed 42 for 5 episodes not started by 10/12 plan A, SP-SR failures ep3, 19, 13 first; segment t1xb: ep3, ep19, ep13, ep10, ep14; plan in agent-doc.
+stages/policy/queues/mf4090_t1xb_s43.txt	Tier 1 baseline chase: variant A for the 5 episodes that 10/12 plan A did not start; segment t1xb_s43: ep14, seed 43; plan agent-doc/plan-t1-chase-2026-10-13.md.
+stages/policy/queues/mf4090_t1xb_s44.txt	Tier 1 baseline chase: variant A for the 5 episodes that 10/12 plan A did not start; segment t1xb_s44: ep14, seed 44; plan agent-doc/plan-t1-chase-2026-10-13.md.
+stages/policy/queues/mf4090_t1xb_s45.txt	Tier 1 baseline chase: variant A for the 5 episodes that 10/12 plan A did not start; segment t1xb_s45: ep14, seed 45; plan agent-doc/plan-t1-chase-2026-10-13.md.
+stages/policy/queues/mf4090_t1xp.txt	Tier 1 r3p (variant A, object position reward sigma 0.05 to 0.03): ep10, 29, 19 pass SP, fail MP, seed 42 (mf4090, 4M buffer); segment t1xp: ep10, ep29, ep19; plan in agent-doc.
+stages/policy/queues/mf4090_t1xp2.txt	Tier 1 r3p (variant A, object position reward sigma 0.05 to 0.03): ep10, 29, 19 pass SP, fail MP, seed 42 (mf4090, 4M buffer); segment t1xp2: ep10, ep29; plan agent-doc/plan-precision-2026-10-18.md.
+stages/policy/queues/mf4090_t1zp.txt	Tier 1 push for first place, A2: variant A plus object orientation term, seed 42 (ep20 in segment t1zp_s43, seed 43; mf4090, 4M buffer); segment t1zp: ep8, ep21, ep17; plan in agent-doc.
+stages/policy/queues/mf4090_t1zp_s43.txt	Tier 1 push for first place, A2: variant A plus object orientation term (mf4090, 4M buffer, baseline: current Tier 1 submission list); segment t1zp_s43: ep20, seed 43; plan in agent-doc.
+stages/policy/queues/mf4090_t1zq.txt	Tier 1 r3h (same as t1zh): success control ep20 and hard ep17, seed 42 (mf4090, 4M buffer); adds objective.palm_position_std=0.05; segment t1zq: ep20, ep17; plan agent-doc/plan-t1palm-2026-10-30.md.
+stages/policy/queues/mf4090_t1zr.txt	Tier 1 r3i (same as t1zi): success control ep20 and hard ep17, seed 42 (mf4090, 4M buffer); adds objective.palm_position_std=0.1; segment t1zr: ep20, ep17; plan agent-doc/plan-t1palm-2026-10-30.md.
+stages/policy/queues/mf4090_t1zs.txt	Tier 1 extra candidates: r3o (variant A plus object orientation term) seed 42 on ep18, 24 (mf4090, 4M buffer, as t1zp); segment t1zs: ep18, ep24; plan agent-doc/plan-t12night-2026-10-30.md.
+stages/policy/queues/mf4090_t1zs2.txt	Tier 1 AUC leaderboard: r3o (variant A plus object orientation term) seed 42 on untried ep26, 12 (mf4090, 4M buffer, as t1zs); segment t1zs2: ep26, ep12; plan agent-doc/plan-t1fill-2026-11-01.md.
+stages/policy/queues/mf4090_t1zt.txt	Tier 1 r3o rollout: seed 42, three segments of two episodes (ep19, 13; ep7, 3; ep22, 16), mf4090, 4M buffer; segment t1zt: ep19, ep13; plan agent-doc/plan-t1r3o-2026-10-31.md.
+stages/policy/queues/mf4090_t1zt2.txt	Tier 1 r3o rollout: seed 42, three segments of two episodes (ep19, 13; ep7, 3; ep22, 16), mf4090, 4M buffer; segment t1zt2: ep7, ep3; plan agent-doc/plan-t1r3o-2026-10-31.md.
+stages/policy/queues/mf4090_t1zt3.txt	Tier 1 r3o rollout: seed 42, three segments of two episodes (ep19, 13; ep7, 3; ep22, 16), mf4090, 4M buffer; segment t1zt3: ep22, ep16; plan agent-doc/plan-t1r3o-2026-10-31.md.
+stages/policy/queues/mf4090_t1zt4.txt	Tier 1 r3o rollout: seed 42, three segments of two episodes (ep19, 13; ep7, 3; ep22, 16), mf4090, 4M buffer; segment t1zt4: ep7, ep22; plan agent-doc/plan-t1r3o-2026-10-31.md.
+stages/policy/queues/mf4090_t1zx.txt	Tier 1 r3o: list run lines plus object orientation term (t1-ep5-w2048-cap4m-r3a-mf4090, t1-ep29-w2048-cap4m-r3a-s43-mf4090 to -r3o-); segment t1zx, mf4090. Generated by make_clone_queue.py.
+stages/policy/queues/mf4090_t1zx2.txt	Tier 1 r3o: list run lines plus object orientation term (t1-ep27-w2048-cap4m-r3a-s43-mf4090, t1-ep0-w2048-cap4m-r3a-s43-mf4090 to -r3o-); segment t1zx2, mf4090. Generated by make_clone_queue.py.
+stages/policy/queues/mf4090_t1zx3.txt	Tier 1 r3o: list run lines plus object orientation term (t1-ep6-w2048-cap4m-r3a-s43-mf4090, t1-ep15-w2048-cap4m-r3a-mf4090 to -r3o-); segment t1zx3, mf4090. Generated by make_clone_queue.py.
+stages/policy/queues/mf4090_t1zx4.txt	Tier 1 r3o: list run lines plus object orientation term (t1-ep10-w2048-cap4m-r3a-mf4090, t1-ep14-w2048-cap4m-r3a-s44-mf4090 to -r3o-); segment t1zx4, mf4090. Generated by make_clone_queue.py.
+stages/policy/queues/mf4090_t2a.txt	Tier 2 batch t2a: v5.4 clean-room reference (runs/motion/tier2), G1 recipe, per-frame playback, 4M buffer (mf4090); ground-only: scene.support=false. Plan agent-doc/plan-t2-batch-2026-10-01.md.
+stages/policy/queues/mf4090_t2b.txt	Tier 2 batch t2b: v5.4 clean-room reference (runs/motion/tier2), G1 recipe, per-frame playback, 4M buffer (mf4090); ground-only: scene.support=false. Plan agent-doc/plan-t2-batch-2026-10-01.md.
+stages/policy/queues/mf4090_t2ft.txt	t2ft full run: ep25 and ep4 continue from the ot3 start (step 349999104) for 70000640 steps each (total 419999744). F = curriculum stage 8 immediate_first_frame_probability 1.0, K = unchanged.
+stages/policy/queues/mf4090_t2ft2.txt	t2ft2: repeat and extension of "train ep25 longer"; plan agent-doc/plan-t2ft2-2026-10-26.md. Hand-written; training mounts v040_p185_nfg (ft_chain.sh sets V2D_FC_SRC).
+stages/policy/queues/mf4090_t2m.txt	Tier 2 earlier contact labels (set from Tier 2 data only): variant A seed 42, reference runs/motion/tier2_c5 (contact start 5 frames earlier, gaps up to 15 frames filled); segment t2m: ep25, ep9, ep1.
+stages/policy/queues/mf4090_t2m2.txt	Tier 2 earlier contact labels (set from Tier 2 data only): variant A seed 42, reference runs/motion/tier2_c5 (contact start 5 frames earlier, gaps up to 15 frames filled); segment t2m2: ep2, 11, 17
+stages/policy/queues/mf4090_t2mrp.txt	Tier 2 dense smoke checkpoints for all-fail ep4, 28, 1, 9, 2, 11, 17: variant A seed 42 (mf4090, 4M buffer), a checkpoint every 409600 smoke steps; a stop-chain marker blocks full training.
+stages/policy/queues/mf4090_t2msd.txt	Tier 2 ep25 dense smoke checkpoints: variant A seed 42 (mf4090, 4M buffer), a checkpoint every 409600 smoke steps; a stop-chain marker blocks full training; segment t2msd: ep25; plan in agent-doc.
+stages/policy/queues/mf4090_t2mtr.txt	Tier 2 repeat with relaxed object position termination: variant A seed 42 plus termination.object_position_threshold=0.3 (was 0.1) for ep25 and extrapolated ep4, ep28; segment t2mtr; mf4090.
+stages/policy/queues/mf4090_t2mv.txt	Tier 2 ep23 variant A seed 42 catch-up (skipped in the 10/9 rollout: ml40 smoke run ran out of GPU memory; mf4090, 4M buffer); segment t2mv: ep23; plan agent-doc/plan-precision-2026-10-18.md.
+stages/policy/queues/mf4090_t2mx.txt	Tier 2 variant A moved to mf4090, 4M buffer: ep13, 19, 14 pass SP, fail MP, seed 42 (variant A on ml40 with 10M did not fix MP); segment t2mx: ep13, ep19, ep14; plan agent-doc/plan-t2mx-2026-10-19.md.
+stages/policy/queues/mf4090_t2zo.txt	Tier 2 AUC leaderboard: r3o seed 42 for the tracked episodes with the lowest ADD-AUC (ep10, 0, 26, 21), mf4090, 4M buffer; segment t2zo: ep10, ep0; plan agent-doc/plan-t2auc2-2026-11-02.md.
+stages/policy/queues/mf4090_t2zo2.txt	Tier 2 AUC leaderboard: r3o seed 42 for the tracked episodes with the lowest ADD-AUC (ep10, 0, 26, 21), mf4090, 4M buffer; segment t2zo2: ep26, ep21; plan agent-doc/plan-t2auc2-2026-11-02.md.
+stages/policy/queues/mf4090_t3p.txt	Tier 3 trial: variant A seed 42 for ep8, ep24 (mf4090, 4M buffer, reference reconstructed from video under runs/motion/tier3); segment t3p: ep8, ep24; plan agent-doc/plan-t3-pilot-2026-10-09.md.
+stages/policy/queues/mf4090_t3p2.txt	Tier 3 trial round 2: variant A seed 42 for ep8, ep24 (reference: a teammate's corrected reconstruction in runs/motion/tier3_v2); segment t3p2: ep8, ep24; plan in agent-doc.
+stages/policy/queues/mf4090_t3p2b.txt	Tier 3 trial round 2: variant A seed 42 for ep8, ep24 (reference: a teammate's corrected reconstruction in runs/motion/tier3_v2); segment t3p2b: ep24; plan agent-doc/plan-t3-pilot-v2-2026-10-10.md.
+stages/policy/queues/mf4090_t3p3a.txt	Tier 3 corrected version, other 10 episodes: variant A seed 42 (mf4090, 4M buffer, reference runs/motion/tier3_v2); segment t3p3a: ep20, ep29, ep0, ep15; plan in agent-doc.
+stages/policy/queues/mf4090_t3p3b.txt	Tier 3 corrected version, other 10 episodes: variant A seed 42 (reference runs/motion/tier3_v2); segment t3p3b: ep18, ep21, ep22, ep23, ep26, ep17; plan agent-doc/plan-t3-v2-train10-2026-10-10.md.
+stages/policy/queues/mf4090_t3p3c.txt	Tier 3 corrected version, remaining 10 episodes: variant A seed 42 (reference under runs/motion/tier3_v2); segment t3p3c: ep22, ep23, ep26, ep17; plan agent-doc/plan-t3-v2-train10-2026-10-10.md.
+stages/policy/queues/mf4090_t3p4a.txt	Tier 3 final delivery version best_hm: variant A seed 42 (mf4090, 4M buffer, reference runs/motion/tier3_hm, support per best_hm); segment t3p4a: ep15, ep17, ep1, ep2, ep3; plan in agent-doc.
+stages/policy/queues/mf4090_t3p4b.txt	Tier 3 final delivery version best_hm: variant A seed 42 (reference runs/motion/tier3_hm); segment t3p4b: ep12, ep13, ep14, ep16, ep19, ep21, ep25, ep27; plan agent-doc/plan-d-t3hm-train-2026-10-12.md
+stages/policy/queues/mf4090_t3pcoff.txt	Control arm ocoff: gb5 reference unchanged, only object orientation termination 0.6 to 3.2 rad (above pi, so off). Plan agent-doc/plan-t3hand-2026-10-27.md version 3.1 P0. From mf4090_t3pg5c_s43.txt.
+stages/policy/queues/mf4090_t3pdyn.txt	Tier 3 dynamics-fix pilot: reference for ep15, ep3, ep16 replaced by best_dyn4 (mf4090, config copied from the best_hm batch); segment t3pdyn; plan agent-doc/plan-t3dyn-pilot-2026-10-14.md.
+stages/policy/queues/mf4090_t3pg.txt	Tier 3 gb3 (calibrated intrinsics): variant A seed 42 (mf4090, 4M buffer, reference runs/motion/tier3_gb3, support per gb3); segment t3pg: ep20, ep0, ep22, ep21; plan in agent-doc.
+stages/policy/queues/mf4090_t3pg4.txt	Tier 3 gb4 (calibrated intrinsics, human re-solved): variant A seed 42 (reference runs/motion/tier3_gb4); segment t3pg4: ep0, ep6, ep7, ep8, ep20, ep22, ep18, ep24, ep26, ep29, ep21; mf4090.
+stages/policy/queues/mf4090_t3pg5_s44.txt	Tier 3 gb5 (FoundationPose object poses re-selected on gb4): variant A on lost episodes (reference runs/motion/tier3_gb5); segment t3pg5_s44: ep5, seed 44; plan agent-doc/plan-t3g5-2026-10-21.md.
+stages/policy/queues/mf4090_t3pg5a.txt	Tier 3 gb5 (FoundationPose object poses re-selected on gb4): variant A seed 42 on lost episodes (reference runs/motion/tier3_gb5); segment t3pg5a: ep5, ep10, ep15, ep27; plan in agent-doc.
+stages/policy/queues/mf4090_t3pg5b.txt	Tier 3 gb5 (FoundationPose object poses re-selected on gb4): variant A seed 42 on lost-track episodes (reference runs/motion/tier3_gb5); segment t3pg5b: ep13, ep19, ep1, ep9, ep17; plan in agent-doc.
+stages/policy/queues/mf4090_t3pg5c_s43.txt	Tier 3 gb5 (FoundationPose object poses re-selected on gb4): variant A on lost episodes (reference runs/motion/tier3_gb5); segment t3pg5c_s43: ep13, ep19, seed 43; plan in agent-doc.
+stages/policy/queues/mf4090_t3phr.txt	P1 training: reference replaced by the de-jumped re-export tier3_gb5hrdyn7 (plan agent-doc/plan-t3hand-2026-10-27.md version 3 P1). Variant A unchanged (orientation termination 0.6), seed 42.
+stages/policy/queues/mf4090_t3pk.txt	Tier 3 k-fix retraining: 3 episodes where current policies cannot track the new reference, variant A seed 42 (mf4090, 4M buffer, reference runs/motion/tier3_kfix); segment t3pk: ep0, ep18, ep29.
+stages/policy/queues/mf4090_t3ps.txt	Tier 3 ep20 retraining on the delivered box tabletop: reference runs/motion/tier3_v2s (v2 reference plus box tabletop), variant A seed 42 (mf4090, 4M buffer); segment t3ps: ep20.
+stages/policy/queues/mf4090_t3psta.txt	Tier 3 standing fallback for 15 lost-track episodes: reference runs/motion/tier3_st (robot held at frame 0, object trajectory copied), variant A seed 42 (mf4090); segment t3psta: ep16, ep23, ep1.
+stages/policy/queues/mf4090_t3pstb.txt	Tier 3 standing fallback for 15 lost-track episodes: reference runs/motion/tier3_st (robot held at frame 0); segment t3pstb: ep2, ep3, ep4, ep9, ep11, ep12, ep13, ep17, ep19, ep25, ep27, ep28.
+stages/policy/queues/ml40_batch1a.txt	Tier 1 batch batch1a (plan agent-doc/plan-batch1-tier1-2026-09-29.md): official G1 recipe, per-frame playback, 10M buffer (ml40); ground-only sequences use scene.support=false.
+stages/policy/queues/ml40_batch1b.txt	Tier 1 batch batch1b (plan agent-doc/plan-batch1-tier1-2026-09-29.md): official G1 recipe, per-frame playback, 10M buffer (ml40); ground-only sequences use scene.support=false.
+stages/policy/queues/ml40_box.txt	Box retraining (plan agent-doc/plan-box6-and-eval-runtime-2026-10-01.md): training mounts the #185 patch copy, official G1 recipe, per-frame playback, 10M buffer (ml40); box support on.
+stages/policy/queues/ml40_day1.txt	ml40 (L40S) Day 1: full-config smoke run first, criteria in agent-doc/plan-training-launch-2026-09-28.md; after it passes, append the full ep20 run.
+stages/policy/queues/ml40_day1_eval.sh	Day 1 evaluation (runs on ml40). Settings and criteria pre-registered in agent-doc/experiments/2026-09-28-day1.md.
+stages/policy/queues/ml40_day1b.txt	ml40 (L40S) Day 1b: official snack_box sample, full config (default 10M buffer, no overrides), to decide recipe and environment vs data.
+stages/policy/queues/ml40_day2.txt	Day 2 (plan agent-doc/plan-day2-2026-09-28.md version 2). Ground-only sequences use scene.support=false (the official support file is an empty Xform, so FlashCHORD cannot build the scene).
+stages/policy/queues/ml40_day2b.txt	Day 2b (user chose B on 09-28 23:05: fixed per-frame playback): real-duration arms of ep13 and ep10 dropped; ep10 per-frame with the original config, plus round 2 medium ep4 and long ep2.
+stages/policy/queues/ml40_nfg.txt	ep7 retraining on two tiers with the non-finite guard (plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md version 5 B.5): mounts v040_p185_nfg, seed 42, box support on, 10M buffer, keeps 4 states.
+stages/policy/queues/ml40_playback.txt	Playback speed comparison (Day 1b diagnostic trigger T2, unrelated to Tier 2), ml40 full run: differs from Day 1 t1-ep20-w2048-cap10m-ml40 only in real-duration playback and two relaxed tolerances.
+stages/policy/queues/ml40_r3t2a.txt	Step 3 recipe trial segment A: variant A seed 42 for 5 trial episodes and control ep22 (plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2, Tier 2, ml40). Generated by make_trial_queue.py.
+stages/policy/queues/ml40_r3t2bc.txt	Step 3 recipe trial segment BC: baseline seed 43 and variant A seed 43 per trial episode, only after a CONTINUE gate verdict (plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2, Tier 2).
+stages/policy/queues/ml40_t1c.txt	Tier 1 earlier contact labels: variant A seed 42 for 4 lost episodes, reference runs/motion/tier1_c10 (contact start 10 frames earlier, gaps up to 15 frames filled); segment t1c: ep25, 28, 11, 1.
+stages/policy/queues/ml40_t1c2.txt	Tier 1 earlier contact labels: variant A seed 42 for 4 lost-track episodes, reference runs/motion/tier1_c10 (contact start 10 frames earlier, gaps up to 15 frames filled); segment t1c2: ep9, ep2.
+stages/policy/queues/ml40_t1c_s43.txt	Tier 1 earlier contact labels: variant A for lost episodes, reference runs/motion/tier1_c10 (contact start 10 frames earlier, gaps up to 15 frames filled; ml40, 10M); segment t1c_s43: ep28, ep11, ep2.
+stages/policy/queues/ml40_t1c_s44.txt	Tier 1 earlier contact labels: variant A for lost episodes, reference runs/motion/tier1_c10 (contact start 10 frames earlier, gaps up to 15 frames filled; ml40, 10M); segment t1c_s44: ep11, seed 44.
+stages/policy/queues/ml40_t1c_s45.txt	Tier 1 earlier contact labels: variant A for lost episodes, reference runs/motion/tier1_c10 (contact start 10 frames earlier, gaps up to 15 frames filled; ml40, 10M); segment t1c_s45: ep11, seed 45.
+stages/policy/queues/ml40_t1hg.txt	Tier 1 MPPE leaderboard: base recipe with force closure weight 5 to 20 (fc20, no variant A), seed 42, ml40, 10M buffer; segment t1hg: ep4, ep9; plan agent-doc/plan-t1night-2026-11-01.md.
+stages/policy/queues/ml40_t1hg2.txt	Tier 1 MPPE leaderboard: base recipe with force closure weight 5 to 20 (fc20, no variant A), seed 42, ml40, 10M buffer; segment t1hg2: ep1; plan agent-doc/plan-t1night-2026-11-01.md.
+stages/policy/queues/ml40_t1hg2_s43.txt	Tier 1 MPPE leaderboard: base recipe with force closure weight 5 to 20 (fc20, no variant A), ml40, 10M buffer; segment t1hg2_s43: ep1, seed 43; plan agent-doc/plan-t1night-2026-11-01.md.
+stages/policy/queues/ml40_t1hg_s43.txt	Tier 1 MPPE leaderboard: base recipe with force closure weight 5 to 20 (fc20, no variant A), ml40, 10M buffer; segment t1hg_s43: ep4, seed 43; plan agent-doc/plan-t1night-2026-11-01.md.
+stages/policy/queues/ml40_t1ho.txt	Tier 1 fallback: variant A seed 42 for ep25, reference runs/motion/tier1_ho (method of t2ho, Tier 1's own reference only; ml40, 10M buffer); segment t1ho: ep25; plan in agent-doc.
+stages/policy/queues/ml40_t1hp.txt	Tier 1 lost-track episodes: base recipe, palm position termination 0.15 to 0.08 m (pt08, no variant A), seed 42, ml40, 10M buffer; segment t1hp: ep25, ep9; plan agent-doc/plan-t1hard-2026-10-31.md.
+stages/policy/queues/ml40_t1hq.txt	Tier 1 MPPE leaderboard: base recipe, palm position termination 0.15 to 0.08 m (pt08, no variant A), ml40, 10M buffer; segment t1hq: ep4; plan agent-doc/plan-t1mppe-2026-11-01.md.
+stages/policy/queues/ml40_t1hq2.txt	Tier 1 ep25: base recipe, palm position termination 0.15 to 0.05 m (pt05, no variant A), seed 42, ml40, 10M buffer; segment t1hq2: ep25; plan agent-doc/plan-t1fill-2026-11-01.md.
+stages/policy/queues/ml40_t1hq_s43.txt	Tier 1 MPPE leaderboard: base recipe, palm position termination 0.15 to 0.08 m (pt08, no variant A), ml40, 10M buffer; segment t1hq_s43: ep25, seed 43; plan agent-doc/plan-t1mppe-2026-11-01.md.
+stages/policy/queues/ml40_t1hr.txt	Tier 1 lost-track episodes: base recipe plus object orientation term (-r3o-nv-, no variant A), seed 42, ml40, 10M buffer; segment t1hr: ep17; plan agent-doc/plan-t1hard-2026-10-31.md.
+stages/policy/queues/ml40_t1hr2.txt	Tier 1 AUC leaderboard: base recipe plus object orientation term (-r3o-nv-, no variant A), seed 42, ml40, 10M buffer; segment t1hr2: ep26, ep23; plan agent-doc/plan-t1fill-2026-11-01.md.
+stages/policy/queues/ml40_t1hr2_s43.txt	Tier 1 AUC leaderboard: base recipe plus object orientation term (-r3o-nv-, no variant A), ml40, 10M buffer; segment t1hr2_s43: ep26, seed 43; plan agent-doc/plan-t1fill-2026-11-01.md.
+stages/policy/queues/ml40_t1hr_s43.txt	Tier 1 lost-track episodes: base recipe plus object orientation term (-r3o-nv-, no variant A), ml40, 10M buffer; segment t1hr_s43: ep17, seed 43; plan agent-doc/plan-t1hard-2026-10-31.md.
+stages/policy/queues/ml40_t1ya.txt	Tier 1 extra candidates: variant A seed 42 for 6 episodes that fall in almost every world (no box; ml40, 10M buffer); segment t1ya: ep2, ep11, ep16, ep4, ep9, ep25; plan in agent-doc.
+stages/policy/queues/ml40_t1yb.txt	Tier 1 baseline chase: variant A seed 42 for 5 episodes with 1-world SP-SR failure and Tier 2 variant A 4096-world SP-SR at least 0.4 (ml40, 10M buffer); segment t1yb: ep16, ep2, ep3, ep19, ep13.
+stages/policy/queues/ml40_t1yb_s43.txt	Tier 1 baseline chase: variant A for 5 episodes with 1-world SP-SR failure and Tier 2 variant A 4096-world SP-SR at least 0.4 (ml40, 10M buffer); segment t1yb_s43: ep19, seed 43.
+stages/policy/queues/ml40_t1za.txt	Tier 1 push for first place, A1: variant A seed 42 on the original reference for hard and weak-MP episodes (ml40, 10M buffer); segment t1za: ep25, ep4, ep10, ep28, ep11, ep9, ep1, ep17.
+stages/policy/queues/ml40_t1zh.txt	Tier 1 r3h (variant A, palm position reward scale 0.2 to 0.05): hard ep25, 9, 4, seed 42 (ml40, 10M buffer, baseline r3a of t1za); segment t1zh: ep25, ep9, ep4; plan in agent-doc.
+stages/policy/queues/ml40_t1zi.txt	Tier 1 r3i (variant A with palm position reward scale 0.2 to 0.1): hard ep25, 9, seed 42 (ml40, 10M buffer, baseline r3a of t1za); segment t1zi: ep25, ep9; plan agent-doc/plan-t1palm-2026-10-30.md.
+stages/policy/queues/ml40_t1zj_s43.txt	Tier 1 extra candidates: ep11 (export game SP success, MP failure) and ep29, 14, 22 (4M runs with low expected MP-SR) with 10M variant A (ml40); segment t1zj_s43: ep11, ep29, ep14, seed 43.
+stages/policy/queues/ml40_t1zw.txt	Tier 1 r3o with 10M buffer: seed 42, two segments of two episodes (ep19, 13; ep3, 16), ml40; segment t1zw: ep19, ep13; plan agent-doc/plan-t1r3o-2026-10-31.md. Generated by make_var_queue.py.
+stages/policy/queues/ml40_t1zw2.txt	Tier 1 r3o with 10M buffer: seed 42, two segments of two episodes (ep19, 13; ep3, 16), ml40; segment t1zw2: ep3, ep16; plan agent-doc/plan-t1r3o-2026-10-31.md. Generated by make_var_queue.py.
+stages/policy/queues/ml40_t2a.txt	Tier 2 batch t2a: v5.4 clean-room reference (runs/motion/tier2), G1 recipe, per-frame playback, 10M buffer (ml40); ground-only: scene.support=false. Plan agent-doc/plan-t2-batch-2026-10-01.md.
+stages/policy/queues/ml40_t2b.txt	Tier 2 batch t2b: v5.4 clean-room reference (runs/motion/tier2), G1 recipe, per-frame playback, 10M buffer (ml40); ground-only: scene.support=false. Plan agent-doc/plan-t2-batch-2026-10-01.md.
+stages/policy/queues/ml40_t2fc.txt	Tier 2 reference hand closing: variant A seed 42 for ep25, ep4 (all lifts fail), reference runs/motion/tier2_fc8 (14 Dex3 finger joints closed to 0.8 of travel in contact segments); segment t2fc.
+stages/policy/queues/ml40_t2ho.txt	Tier 2 fallback: variant A seed 42 for ep25, ep28, reference runs/motion/tier2_ho (both arms and fingers fixed at frame 0, contact labels cleared, legs and root copied); segment t2ho: ep25, ep28.
+stages/policy/queues/ml40_t2o3.txt	Tier 2 AUC leaderboard: the 4 episodes of t2zo, r3o seed 42, ml40, 10M buffer (differs from the 10M variant A in the list only by the object orientation term); segment t2o3: ep10, ep0.
+stages/policy/queues/ml40_t2o3b.txt	Tier 2 AUC leaderboard: the 4 episodes of t2zo, r3o seed 42, ml40, 10M buffer (differs from the 10M variant A in the list only by the object orientation term); segment t2o3b: ep26, ep21.
+stages/policy/queues/ml40_t2oa.txt	Tier 2 r3o pilot P2: control ep12 and 8 lost episodes, variant A plus object orientation term, seed 42 (ml40, 10M buffer); segment t2oa: ep12, ep25, ep28, ep1; plan agent-doc/plan-r3o-2026-10-15.md.
+stages/policy/queues/ml40_t2ob.txt	Tier 2 r3o pilot P2: control ep12 and 8 lost episodes, variant A plus object orientation term, seed 42 (ml40, 10M buffer); segment t2ob: ep4, ep17, ep9, ep2, ep11; plan in agent-doc.
+stages/policy/queues/ml40_t2tm.txt	Tier 2 relaxed object position termination: variant A seed 42 plus termination.object_position_threshold=0.3 (was 0.1) for ep25, ep28 (ml40, 10M buffer); segment t2tm; plan in agent-doc.
+stages/policy/queues/ml40_t2xa.txt	Tier 2 rollout: variant A seed 42 for the other 24 episodes (ml40, 10M buffer, ordered by baseline 4096-world failure:pelvis, low to high); segment t2xa: 15 episodes; plan in agent-doc.
+stages/policy/queues/ml40_t2xb.txt	Tier 2 rollout: variant A seed 42 for the other 24 episodes (ml40, 10M buffer); segment t2xb: ep9, ep1, ep13, ep19, ep2, ep4, ep14, ep25, ep28; plan agent-doc/plan-t2-scaleout-2026-10-09.md.
+stages/policy/queues/ml40_t2xb_s43.txt	Tier 2 rollout: variant A for the other 24 episodes (ml40, 10M buffer, ordered by baseline 4096-world failure:pelvis); segment t2xb_s43: ep13, ep19, seed 43; plan in agent-doc.
+stages/policy/queues/ml40_t2xp.txt	Tier 2 r3p (variant A, object position reward sigma 0.05 to 0.03): ep14, 13, 19 pass SP, fail MP, plus control ep16, seed 42 (ml40, 10M buffer); segment t2xp; plan in agent-doc.
+stages/policy/queues/ml40_t3qa.txt	Tier 3 final delivery version best_hm: variant A seed 42 (ml40, 10M buffer, reference runs/motion/tier3_hm); segment t3qa: ep4, ep5, ep6, ep7, ep8, ep9, ep10, ep11; plan in agent-doc.
+stages/policy/queues/ml40_t3qb.txt	Tier 3 final delivery version best_hm: variant A seed 42 (ml40, 10M buffer, reference runs/motion/tier3_hm); segment t3qb: ep0, ep18, ep22, ep24, ep26, ep20, ep23, ep29; plan in agent-doc.
+stages/policy/queues/ml40_t3qcoff.txt	Control arm ocoff: gb5 reference unchanged, only object orientation termination 0.6 to 3.2 rad (above pi, so off). Plan agent-doc/plan-t3hand-2026-10-27.md version 3.1 P0. From ml40_t3qf1.txt, ep15.
+stages/policy/queues/ml40_t3qdyn.txt	Tier 3 dynamics-fix pilot: ep12 reference replaced by best_dyn4 and best_dyn4s, one run each (ml40, config of the best_hm run on mf4090); segment t3qdyn; plan agent-doc/plan-t3dyn-pilot-2026-10-14.md.
+stages/policy/queues/ml40_t3qdyn_s43.txt	Tier 3 dynamics-fix pilot, extra seed: ep12 best_dyn4 and best_dyn4s, one run each, seed 43 (ml40, config as t3qdyn; pilot plan section 4 Q2); segment t3qdyn_s43. From make_copy_queue.py.
+stages/policy/queues/ml40_t3qf1.txt	Tier 3 gb5: ep15, 27, trained only on mf4090 so far, moved to ml40: variant A seed 42 (10M buffer, reference runs/motion/tier3_gb5); segment t3qf1: ep15, ep27; plan agent-doc/plan-t3far-2026-10-27.md.
+stages/policy/queues/ml40_t3qg.txt	Tier 3 gb3 (calibrated intrinsics): variant A seed 42 (ml40, 10M buffer, reference runs/motion/tier3_gb3, support per gb3); segment t3qg: ep6, ep8, ep7, ep29; plan in agent-doc.
+stages/policy/queues/ml40_t3qg5a.txt	Tier 3 gb5 (FoundationPose object poses re-selected on gb4): variant A seed 42 on lost episodes (ml40, 10M buffer, reference runs/motion/tier3_gb5); segment t3qg5a: ep3, ep12, ep16.
+stages/policy/queues/ml40_t3qg5b.txt	Tier 3 gb5 (FoundationPose object poses re-selected on gb4): variant A seed 42 on lost episodes (ml40, 10M buffer); segment t3qg5b: ep14, ep23, ep2, ep4, ep11, ep25; plan in agent-doc.
+stages/policy/queues/ml40_t3qhr.txt	P1 training: reference replaced by the de-jumped re-export tier3_gb5hrdyn7 (plan agent-doc/plan-t3hand-2026-10-27.md version 3 P1). Variant A unchanged, seed 42. Derived from ml40_t3qf1.txt.
+stages/policy/queues/ml40_t3qs_s43.txt	Tier 3 gb5 near-miss episodes (ep5, 10, 3, 14) with a new seed: variant A (ml40, 10M buffer, reference runs/motion/tier3_gb5); segment t3qs_s43: ep5, ep10, ep3, ep14, seed 43; plan in agent-doc.
+stages/policy/queues/ml40_t3qs_s44.txt	Tier 3 gb5 near-miss episodes (ep5, 10, 3, 14) with a new seed: variant A (ml40, 10M buffer, reference runs/motion/tier3_gb5); segment t3qs_s44: ep3, ep14, seed 44; plan in agent-doc.
+stages/policy/r3o_g1.sh	r3o G1 evaluator compatibility gate (plan agent-doc/plan-r3o-2026-10-15.md 2.1, review item 1; training host, repo root, in tmux).
+stages/policy/r3o_gate.py	r3o inter-segment gate (plan agent-doc/plan-r3o-2026-10-15.md section 3, 2.2, 2.3): after the first segment (t1oa / t2oa) is evaluated, decides whether to start the second. Stdlib only, host.
+stages/policy/r3o_verdict.py	r3o final verdict (plan agent-doc/plan-r3o-2026-10-15.md 2.2, 2.3): after both segments are evaluated, rates all lost episodes of a tier as useful, unclear or useless. Stdlib only, runs on the host.
+stages/policy/relay_when_armed.sh	Waits until the previous relay starts its chain, then arms the next relay (plan agent-doc/plan-t1r3o-2026-10-31.md version 3).
+stages/policy/run_after_log.sh	Waits until the last line of a chain log matches the end line, then runs a command through scripts/dev/record (training host, repo root, setsid in background; Mac offline does not matter).
+stages/policy/run_pace.py	Shows the pace of one or more FlashCHORD full training runs from checkpoint write times (runs on the host, stdlib only).
+stages/policy/run_pace.sh	For the Mac: runs stages/policy/run_pace.py on the training host (script sent over stdin, no repo sync needed, usable during batch training).
+stages/policy/run_queue_line.sh	Runs one run from a queue line, split as run_q in day2_train_chain.sh: leading NAME=value pairs become env vars, the rest goes to fc_run.sh as is. Training host, repo root, in tmux.
+stages/policy/sequence_stats.py	Per-sequence overview of the Tier 1 retarget reference (motion_v1 parquet), used to pick sequences for training pilots (runs in the FlashCHORD container, CPU only).
+stages/policy/sim_nan_facts.sh	Simulator behavior on non-finite states: extracts verbatim Newton, mujoco_warp and Warp source from the training image (flash_chord:latest), with file and line per line, for jev checks.
+stages/policy/site_media_ref.sh	G1 reference animation for the SOP task overview: stages/policy/site_ref_replay.py puts reference frame f into the scene (no physics), headless render with the mp4 viewer.
+stages/policy/site_media_ref_t3.sh	G1 reference column of the SOP gallery "human and G1 in the same motion": takes the reference parquet, fc_src and scene overrides that a Tier 3 run trained with, from its run_record.
+stages/policy/site_ref_camera.py	Computes camera positions for the reference playback video of one motion parquet (runs in the FlashCHORD container, needs pyarrow and numpy).
+stages/policy/site_ref_replay.py	G1 reference animation for the SOP task overview: puts reference frame f into the scene (no physics) and renders headless to MP4 (runs in the FlashCHORD container).
+stages/policy/smoke_check.sh	Smoke run criteria (training host, repo root): checks whether one smoke run passes. Uses the Day 1 smoke criteria and also checks the image fingerprint and divergence.
+stages/policy/smoke_recon_body.sh	ReconBody training smoke run: 200 iterations to confirm the pipeline runs; quality is not the goal. Runs on the training host.
+stages/policy/stage_sync.sh	Syncs the staged source tree into the repo copy on the training host (repo root; called by V2D_AFTER_SYNC_FROM of arm_after.sh).
+stages/policy/support_import_check.py	Builds the support surface once with the currently mounted flash_chord importer and prints type, half size and position of each shape (in the container, CPU only).
+stages/policy/support_kinds.py	Lists the support shapes of each <sequence>_support.usda in a directory (stdlib only; runs on the training host via scripts/dev/pipe-py, no repo sync needed).
+stages/policy/support_py_versions.sh	Compares scene/support.py across three upstream versions: v0.4.0 in the training image, eval runtime aee95f2 named by the official kit, and 8c778f905c (#185) with the box scale fix.
+stages/policy/support_slab_check.py	Checks that the support shapes built by the training importer match the usda source (Mac, stdlib only, reads saved records only).
+stages/policy/t5_throughput.py	Throughput criterion for the T5 smoke run (B.4 of plan agent-doc/plan-ep7-eval-and-guards-2026-10-02.md version 5, registered before T5 ran, b96a530). Runs in the FlashCHORD container (needs wandb).
+stages/policy/test_arm_after.py	Behavior tests of arm_after.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/test_cfg_tools.py	Tests that assert_cfg.py and cfg_diff.py expand lists by index (plan agent-doc/plan-t2ft-2026-10-26.md review 2). Needs PyYAML, runs in the FlashCHORD container.
+stages/policy/test_chain_after.py	Behavior tests of chain_after.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/test_ckpt_nonfinite.py	Behavior tests of ckpt_nonfinite.py (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/test_day2_chain_waits.py	Tests of the stop-chain marker and GPU wait of day2_train_chain.sh and the GPU wait of day2_eval_chain.sh (guards agent-doc/plan-t2-scaleout-2026-10-09.md section 5 and Fable 5.1 review M1, M3).
+stages/policy/test_derive_r3o_rows.py	Tests of derive_r3o_rows.py (stdlib only, runs in a temp directory, does not write the repo). Plan agent-doc/plan-t3auc1-2026-11-03.md section 1.
+stages/policy/test_fc_run_r3o_guard.py	Tests of the r3o guard in fc_run.sh (guards POLICY-I010 in docs/contracts/policy.md; plan agent-doc/plan-r3o-2026-10-15.md 2.1, code review item 7). Stdlib only.
+stages/policy/test_fc_run_watched.py	Behavior tests of fc_run_watched.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/test_fc_src_check.py	Behavior tests of fc_src_check.py (no contract ID yet: run spec not written). Stdlib only (plus git), runs on the Mac and the training host.
+stages/policy/test_gate_skip_flag.py	Tests of gate_skip_flag.sh (no contract ID yet; plan agent-doc/plan-c10-extend-2026-10-16.md version 3).
+stages/policy/test_gate_verdict.py	Tests of gate_verdict.sh (no contract ID yet; plan agent-doc/plan-c10-extend-2026-10-16.md route A, independent review MINOR 3).
+stages/policy/test_make_batch_queue.py	Behavior tests of make_batch_queue.py (no contract ID yet: run spec not written). Stdlib only, runs on the Mac, reads saved results/ and queues in the repo without changing them.
+stages/policy/test_make_clone_queue.py	Tests of make_clone_queue.py (plan agent-doc/plan-t1r3o-2026-10-31.md version 3): a new line differs from its source line only in run name, tag and the two object orientation variables.
+stages/policy/test_make_copy_queue.py	Tests of make_copy_queue.py (guards plan agent-doc/plan-t3dyn-pilot-2026-10-14.md sections 3 and 4: pilot runs copy the queue lines of the best_hm batch and change only the run name and others).
+stages/policy/test_make_diag_support.py	Behavior tests of make_diag_support.py (no contract ID yet: run spec not written). Stdlib only.
+stages/policy/test_make_r3x_queue.py	Tests of make_r3x_queue.py (guards the run design in section 3 of plan agent-doc/plan-t1-r3x-2026-10-08.md; run spec not written, no contract ID yet).
+stages/policy/test_make_trial_queue.py	Tests of make_trial_queue.py (guards the trial design in plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2 section 3; run spec not written, no contract ID yet).
+stages/policy/test_make_var_queue.py	Tests of make_var_queue.py (guards sections 2 and 3 of agent-doc/plan-t2-scaleout-2026-10-09.md and sections 2 and 3 of agent-doc/plan-t3-pilot-2026-10-09.md).
+stages/policy/test_mount_check.py	Behavior tests of mount_check.py (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/test_precheck_expect.py	Tier directory check of precheck_expect.sh (guards section 3 of plan agent-doc/plan-t3-pilot-v2-2026-10-10.md: the Tier 3 corrected reference is under runs/motion/tier3_<name>/).
+stages/policy/test_r3o_gate.py	Tests of r3o_gate.py (inter-segment gate of plan agent-doc/plan-r3o-2026-10-15.md section 3; stdlib only).
+stages/policy/test_r3o_lines.sh	Tests of r3o_lines.awk (contract POLICY-I010): positive case, sigma not matching -sgDD-, missing variable, duplicate variable, plain copy with variables, t1o-style 0.4 line. Runs on Mac bash 3.2.
+stages/policy/test_r3o_verdict.py	Tests of r3o_verdict.py (no contract ID yet; plan agent-doc/plan-r3o-2026-10-15.md 2.2, 2.3). Stdlib only, runs on the Mac.
+stages/policy/test_relay_when_armed.py	Tests of relay_when_armed.sh (plan agent-doc/plan-t1r3o-2026-10-31.md version 3): runs the command only if the last line of the previous relay log is ARMED; STOPPED exits 1.
+stages/policy/test_run_after_log.py	Behavior tests of run_after_log.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/test_support_slab_check.py	Tests of support_slab_check.py (guards section 5 of plan agent-doc/plan-t3-hm-p2-2026-10-12.md, support surface in the training importer; no contract ID yet). Stdlib only.
+stages/policy/test_train_after.py	Behavior tests of train_after.sh: guards section 7 of agent-doc/plan-t1-r3x-2026-10-08.md (next training chain starts only after the previous one ends normally; no contract ID yet). Stdlib only.
+stages/policy/test_train_nan_scan.py	Behavior tests of train_nan_scan.py --log (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+stages/policy/train_after.sh	Waits for one training chain to end, then starts the next (training host, repo root, in tmux). Plan agent-doc/plan-t1-r3x-2026-10-08.md section 7 (ep5 seed 42 rerun unchanged).
+stages/policy/train_nan_scan.py	Scans the W&B summary at the end of training logs to find runs whose training diverged (NaN) (training host, stdlib only).
+stages/policy/trial_g1.sh	Gate G1 of the step 3 recipe trial (training host, repo root, in tmux; Mac offline does not matter). Plan agent-doc/plan-step3-recipe-trial-2026-10-04.md version 2, section 7, step 3.
+stages/policy/wandb_local_history.py	Parses the local W&B records (run-*.wandb) of FlashCHORD training and finds where each metric first becomes non-finite (Mac, via uv with wandb).
+stages/policy/wandb_selftest.py	Small end-to-end W&B test (runs in the FlashCHORD container): initializes as training does (entity/project/group/name passed explicitly).
+stages/policy/wandb_term_mean.py	Mean of one W&B metric over a given curriculum stage (in the container via scripts/dev/in-flash-chord on the training host; reuses the rows reader of wandb_local_history.py).
+stages/policy/wb_summary.py	Summarizes key metrics of W&B training curves per curriculum stage (reads W&B only; runs in the FlashCHORD container, called by wb_summary.sh).
+stages/policy/wb_summary.sh	Runs wb_summary.py in a one-off FlashCHORD container (the container has wandb, no GPU used). Runs on the training host.
+stages/recovery/cleanroom_params.py	Clean-room parameters: derives all data-dependent parameters of the v5.x denoiser from Tier 2 alone plus physical common sense.
+stages/recovery/export_tier2.py	Denoises Tier 2 object trajectories and writes them to disk. Handoff artifact from recovery to retarget.
+stages/recovery/ground_plane_facts.py	Which frame the released ground plane is in: per episode, the angle between its normal and the OpenCV camera "up" (-y), and the distance from origin to plane (stdlib only, read only).
+stages/recovery/noise_gen.py	Generates Tier 2-style object trajectory noise from the measured corruption model (analysis only: input is Tier 1 ground truth).
+stages/recovery/nopen.py	No-penetration constraint: v5.3 post-processing (uses only inputs available in Tier 2: ground plane and object mesh).
+stages/recovery/run_analyses.sh	Runs analysis scripts and saves stdout with provenance to results/<name>.txt.
+stages/recovery/t2core.py	Pure-function core of Tier 2 recovery: reads no data files and imports no module that reads data.
+stages/recovery/t2eval.py	Evaluation of Tier 2 reference denoising, using only Tier 2 data (plan agent-doc/plan-tier2-denoise-2026-10-04.md version 2, sections 3-5).
+stages/recovery/t3_ceiling_grid.py	Ceiling grid calibration of the Tier 3 exo camera: uses the square structure of the grid to find the principal point x coordinate cx (Mac, needs numpy, scipy, opencv-python-headless).
+stages/recovery/t3_float_facts.py	Height above the released ground and camera distance of objects at rest: is the Tier 3 reconstruction float constant (scale, focal length, shift) or growing with distance (tilt)? Read only, no GPU.
+stages/recovery/t3_float_pack.sh	Copies some episodes of one version of a teammate's Tier 3 reconstruction as is to runs/tier3/incoming/<tag>/ok on mf4090, only for read-only analysis by t3_float_facts.py.
+stages/recovery/t3_floor_group_residual.py	Ground normal residual per camera group, split into pitch and roll (Mac, stdlib only; reads only Tier 3 ground fit results, no ground truth).
+stages/recovery/t3_floor_tilt_k.py	Tier 3: can calibrated intrinsics remove the ground tilt in the reconstruction (Mac, needs numpy, trimesh, scipy; reads CARI4D camera-frame object poses and a teammate's ground rest events).
+stages/recovery/t3_gb3_feet.sh	Height of the human support foot in the gb3 reference above the released ground (ml40, repo root, CPU only; reads a teammate's code, input, convert and ground fit only).
+stages/recovery/t3_gb3_inventory.py	Lists the source and file fingerprints per episode of a teammate's gb3 delivery (tier3_cari4d_gb_best_dr2s_dyn7) (on the ml40 host via stdin, stdlib only, read only).
+stages/recovery/t3_horizon_check.py	Tier 3 world frame fact 2: compares the measured horizon in the exo image with the horizon predicted if the world frame is this camera's frame (Mac, needs numpy).
+stages/recovery/t3_init_check.sh	Checks for the Tier 3 initialization pilot (ml40, repo root, CPU only; reads a teammate's tier3 directory and code only, writes results to our OUT).
+stages/recovery/t3_init_compare.py	Checks A and C of the Tier 3 initialization pilot: per-frame comparison of object poses in two CARI4D raw outputs, work_fp and work_init (in the ml40 v2d_cari4d image, CPU only).
+stages/recovery/t3_init_sil.py	Addition to check B of the Tier 3 initialization pilot: reports the silhouette check (a teammate's t3_object_check.py output) separately on replaced and other frames (ml40 host, stdlib only).
+stages/recovery/t3_k_budget.py	Tier 3 error budget part 1: how far the intrinsics alone shift the current delivered reconstruction in the world frame (Mac, needs numpy, pyarrow; reads delivered object poses only).
+stages/recovery/t3_kfix.py	Tier 3 k-fix option 1: re-expresses the CARI4D camera-frame reconstruction with calibrated intrinsics (in the ml40 v2d_cari4d image, CPU only; reads CARI4D convert results only).
+stages/recovery/t3_kfix_feet.sh	k-fix criterion 4: height of the human support foot above the released ground after the world step (ml40, repo root, CPU only; reads a teammate's code, input and delivery chain only).
+stages/recovery/t3_kfix_feet_compare.py	k-fix criterion 4 table: per-episode heights of the human support foot above the released ground after the world step, new vs old reference side by side (Mac, stdlib only; reads two records).
+stages/recovery/t3_kfix_feet_roll.py	k-fix criterion 4b: in the re-expressed camera frame, do the human feet show the roll of about 1.2 degrees fitted from object events (in the ml40 v2d_cari4d image, CPU only; read only).
+stages/recovery/t3_kfix_feet_roll.sh	k-fix criterion 4b: human foot roll test (ml40, repo root, CPU only; reads the shadow root, Tier 3 input and a teammate's code only).
+stages/recovery/t3_kfix_floor_check.py	k-fix criterion 2: does a teammate's t3_floor_fit.py, refit on the new expression, reproduce the same ground correction line as t3_floor_tilt_k.py (Mac, stdlib only; reads ground fit JSON only).
+stages/recovery/t3_kfix_ref_diff.py	k-fix batch 1: per-episode difference between the new and old reference (Mac, needs numpy, pyarrow; reads two Tier 3 parquets only, no ground truth, no Tier 1 or Tier 2 trajectories).
+stages/recovery/t3_kfix_run.sh	CPU part of Tier 3 k-fix (ml40, repo root; CPU only, no GPU, no packing, no submission). Plan agent-doc/plan-t3-kfix-2026-10-16.md options 1 and 2, criteria 1 and 2.
+stages/recovery/t3_kfix_source_check.py	Source check for k-fix criterion 0: is the CARI4D output in the convert directory the one used for the first batch of policy training (Mac, needs numpy, pyarrow; reads CARI4D output only).
+stages/recovery/t3_kfix_vs_kgb.py	Per-frame comparison of the k-fix re-expression with a teammate's convert_kgb (same calibrated intrinsics) (in the ml40 v2d_cari4d image, CPU only; reads the focal outputs of both).
+stages/recovery/t3_manhattan_calib.py	Manhattan world calibration of the Tier 3 exo camera, also tests whether the world frame equals the main camera frame (Mac, needs numpy, scipy, opencv-python-headless).
+stages/recovery/t3_pick_version.py	Picks a version from the float recheck records of two corrected versions by the rule registered in section 4 of plan agent-doc/plan-t3-pilot-v2-2026-10-10.md (Mac, stdlib only).
+stages/recovery/t3_released_planes.py	Distribution of released ground planes per camera group (Mac, repo root, stdlib only; reads only the released ground_plane.json, no trajectories).
+stages/recovery/t3_sha_match.py	Checks that the parquet in the B.1 read-only record is the same file that the segment A float recheck read (Mac, stdlib only).
+stages/recovery/t3_version_diff.py	Compares the columns of the same episode parquet in two Tier 3 tier directory versions (training host, repo root, read only, report only).
+stages/recovery/t3_world_frame_facts.py	Tier 3 world frame fact 1: compares the released ground planes of all 30 episodes (Mac, stdlib only; reads no trajectories and no Tier 1).
+stages/recovery/t3flip13_summary.py	Summary of t3flip13 F0 (negative control) and F1 (injected positive control, report only) (training host, python3, stdlib only). Plan agent-doc/plan-t3flip13-2026-10-27.md version 2.1, section 2.
+stages/recovery/t3fx_ac.sh	Full run of t3fix A (scoring) and C (classification) on 30 episodes (ml40, CPU). Plan agent-doc/plan-t3fix-2026-10-27.md section 4, 10/28 row. A uses 6 lanes of 4 threads; C one lane.
+stages/recovery/t3fx_build.sh	Downstream chain of t3hand P1: on our own root t3recon/t3fx, connects the tier3_cari4d_gb5_best_dr2s_hr layer from t3_held_fix.py to the training reference.
+stages/recovery/t3fx_summary.py	Summary of t3fix A and C (training host, stdlib only). Plan agent-doc/plan-t3fix-2026-10-27.md section 1 A5, C2 and criterion G0.
+stages/recovery/t3fx_tex.sh	Full run of t3fix B1 (texture-based orientation choice) on 30 episodes (ml40, CPU). Plan agent-doc/plan-t3fix-2026-10-27.md version 3.1 section 1 B1. 6 lanes of 4 threads; skips episodes outside B1.
+stages/recovery/t3fx_tex_summary.py	Summary of t3fix B1 (training host, uses the t3recon gate environment). Plan agent-doc/plan-t3fix-2026-10-27.md version 3.1 section 1 B1, criterion G0.
+stages/recovery/t3hand_probe.py	Two extra probes for section 0 of t3hand (ml40, t3recon gate environment, read only; report only, no verdict). Plan agent-doc/plan-t3hand-2026-10-27.md section 0.
+stages/recovery/t3r_1b_e1.sh	Full rerun for t3takeover level 1b criterion E1 (training host ml40, in tmux; CPU only). Plan agent-doc/plan-t3takeover-1b-2026-10-21.md section 1 items 4-6, criterion E1.
+stages/recovery/t3r_compare.py	Comparator for t3takeover level 1 (read only; needs numpy, pyarrow). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md criterion K1 and review item 2.
+stages/recovery/t3r_copy.sh	Copy step of t3takeover level 1 (training host; must run via stages/recovery/t3r_run.sh in a namespace with a teammate's directory read only). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md, K0.
+stages/recovery/t3r_env.sh	t3takeover scripts source this file, then call t3r_env <repo root>: sets interpreter, masks and gate directory once from T3R_ENV (sets variables only, runs no commands).
+stages/recovery/t3r_env_build.sh	t3takeover level 1b: builds our own two Python environments under the t3recon/env directory in our /lab_data tree (training host ml40; CPU only, writes only our directories).
+stages/recovery/t3r_env_lists.py	t3takeover level 1b: reads the distribution list of a venv and computes a digest of each distribution's RECORD (read only; stdlib only, runs with system python3).
+stages/recovery/t3r_fix_files.sh	Generates the t3fix copy list (training host; read only: find and stat only, never writes a teammate's directory). Plan agent-doc/plan-t3fix-2026-10-27.md section 1 D1, section 0 item 8.
+stages/recovery/t3r_gate_eps.sh	Runs eps.sh of our gate repo in a read-only namespace (called only through stages/recovery/t3r_run.sh). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md review item 1.
+stages/recovery/t3r_gate_setup.sh	t3takeover level 1 part B (support usda): sets up the gate repo in our directory (ml40; writes only our directory). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md section 1 item 2, review item 1.
+stages/recovery/t3r_incontainer_ours	Stand-in for scripts/dev/incontainer in the level 1b gate repo (t3recon/gate_e/repo), installed by stages/recovery/t3r_gate_setup.sh when T3R_ENV=ours.
+stages/recovery/t3r_level1.sh	t3takeover level 1 part A: in our own root, reproduces gb5 by a teammate's steps: decode, focal, world, assemble, physics check, support, dr2s, physics check, dyn7, physics check.
+stages/recovery/t3r_level1_compare.sh	Comparison for t3takeover level 1 part A (training host ml40; the comparator runs read-only via stages/recovery/t3r_run.sh with a teammate's host interpreter). Plan criterion K1.
+stages/recovery/t3r_level1_controls.sh	Two extra runs for t3takeover level 1 part A (training host ml40, in tmux; CPU only). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md criterion K1 (positive control) and K2 registration item 3.
+stages/recovery/t3r_level1_usda.sh	t3takeover level 1 part B: reproduces the support usda of three episodes in our gate repo as in a teammate's 10/20 gb5dyn7 round, then compares to the reference (ml40, in tmux; CPU only).
+stages/recovery/t3r_other.sh	Finds a teammate's v2d directory, checks that it and the teammate's two interpreters are trustworthy, then prints the path (training host; read only). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md.
+stages/recovery/t3r_run.sh	Runs a command with a teammate's directory read only (training host, uses only Linux unshare / mount / setpriv). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md section 1 item 1, review item 3.
+stages/recovery/t3r_seed_root.sh	t3takeover level 1: seeds a new root from the first root t3 (ml40; reads and writes only our directories, never a teammate's). Plan agent-doc/plan-t3takeover-v3-2026-10-21.md criteria K1, K2.
+stages/recovery/t3r_world_repeat.sh	Check for t3takeover criterion K2: reruns the world step of one episode in our directory to test whether it is bit-for-bit deterministic (training host ml40; CPU only).
+stages/recovery/test_t2eval.py	Tests of the Tier 2 denoising improvement (plan agent-doc/plan-tier2-denoise-2026-10-04.md version 2 sections 0, 4, 5; guards tier isolation and unchanged v5.4; no contract ID yet).
+stages/recovery/test_t3_float_facts.py	Tests of t3_float_facts.py (guards the method and registered reading of agent-doc/experiments/2026-10-09-t3-float-structure.md; run spec not written, no contract ID yet).
+stages/recovery/test_t3_kfix.py	Unit tests of t3_kfix.py (no contract ID yet: run spec not written; plan agent-doc/plan-t3-kfix-2026-10-16.md option 1). Runs on the Mac, needs only numpy; the human part needs SOMA.
+stages/recovery/test_t3_pick_version.py	Tests of t3_pick_version.py (guards the version rule registered in section 4 of plan agent-doc/plan-t3-pilot-v2-2026-10-10.md; run spec not written, no contract ID yet). Stdlib only.
+stages/recovery/test_t3_sha_match.py	Tests of t3_sha_match.py (guards the SHA criterion in section 4 of plan agent-doc/plan-t3-v2-retarget18-2026-10-10.md; no contract ID yet). Stdlib only.
+stages/recovery/test_t3r_compare.py	Tests of stages/recovery/t3r_compare.py: guards the two comparators and the threshold self-check of criterion K1 in plan agent-doc/plan-t3takeover-v3-2026-10-21.md.
+stages/recovery/test_t3r_env_lists.py	Tests of stages/recovery/t3r_env_lists.py: guards criterion E0 of plan agent-doc/plan-t3takeover-1b-2026-10-21.md (review change item 5: compare by RECORD, not only name and version).
+stages/recovery/test_t3r_run.py	Tests of stages/recovery/t3r_run.sh (Linux only, needs user namespace unshare; skipped on the Mac). Guards criterion K0 of plan agent-doc/plan-t3takeover-v3-2026-10-21.md.
+stages/recovery/test_tier2_defaults.py	Tier 2 handoff defaults must not point to a Tier 1-derived version (guards tier isolation; plan agent-doc/plan-tier2-denoise-2026-10-04.md version 2 section 8 step 2; no contract ID yet).
+stages/recovery/test_tier2_inputs_md5.py	Tests of tier2_inputs_md5.py (guards section 2 of plan agent-doc/plan-t3-v2-retarget18-2026-10-10.md; no contract ID yet). Stdlib only.
+stages/recovery/test_tier3_expect.py	Tests of tier3_expect.py (guards section 3 of plan agent-doc/plan-t3-pilot-2026-10-09.md, review M1; no contract ID yet). Stdlib only.
+stages/recovery/test_tier3_relay.py	Behavior tests of tier3_relay.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac.
+stages/recovery/test_tier3_root.py	Tests of tier3_root.py (guards section 3 of plan agent-doc/plan-t3-pilot-2026-10-09.md: builds the Tier 3 tier directory, checks hashes one by one (review M1), writes sources to provenance.json).
+stages/recovery/test_tier3_stage_hf.py	Behavior tests of tier3_stage_hf.sh (no contract ID yet: run spec not written; plan agent-doc/plan-t3-kfix-2026-10-16.md, option 4 execution rules, step 4).
+stages/recovery/tier2_inputs_md5.py	Lists md5 of meshes, ground planes and support surfaces for given episodes in the official Tier 2 directory (training host, repo root, read only, stdlib only).
+stages/recovery/tier3_expect.py	Generates the hash table to check when building the Tier 3 tier directory, from two read-only check records (Mac, stdlib only). Plan agent-doc/plan-t3-pilot-2026-10-09.md section 3 (review M1).
+stages/recovery/tier3_pack_remote.sh	On ml40 (run via stdin): packs the parquet, metadata and deployed version of given episodes from a teammate's Tier 3 reconstruction into a tar on stdout.
+stages/recovery/tier3_relay.sh	Copies the tier directory, convert results and retarget results of one Tier 3 version on mf4090 as is to the repo copy on ml40 (Mac, repo root; the Mac only sends commands and compares lists).
+stages/recovery/tier3_root.py	Builds the tier directory from copied Tier 3 reconstruction outputs (plan agent-doc/plan-t3-pilot-2026-10-09.md section 3). Stdlib only.
+stages/recovery/tier3_stage.sh	Copies some episodes of a teammate's Tier 3 reconstruction on ml40 to mf4090 and adds them to the tier directory runs/tier3/root (Mac, repo root; the Mac only forwards).
+stages/recovery/tier3_stage_hf.sh	Copies some episodes of a Tier 3 version directory on ml40 to mf4090 via the private HF transfer repo, into runs/tier3/root_<name> (Mac, repo root; data does not pass the Mac, it only sends commands).
+stages/recovery/v51.py	Tier 2 object trajectory denoiser v5.1 (production version). Uses only inputs available in Tier 2.
+stages/retarget/batch.sh	Batch of two tiers x 30 episodes: convert, retarget, alignment check. Runs on the training host.
+stages/retarget/box_ref_check.sh	Penetration of the reference into support and ground for the three box episodes (ep1, ep7, ep28) of one tier under #185 geometry (Cube built as size x scale) (training host, repo root).
+stages/retarget/challenge_to_soma.py	Challenge data (LeRobot v2.1, one tier) to the input directory of the official soma_to_g1.
+stages/retarget/check_support_alignment.py	R1 numeric check: are the support surface and the retargeted object in the same frame.
+stages/retarget/contact_relabel.py	Moves contact labels earlier and fills gaps (in the container via scripts/dev/in-flash-chord; changes only the training column hand_contact_active, reference trajectory untouched).
+stages/retarget/eps.sh	Runs one.sh (convert, retarget, alignment check) for each sequence of one tier, then prints each result line and log tail. Training host, repo root, in tmux, saved via record.
+stages/retarget/finger_close.py	Closes the Dex3 hand in the reference: in contact segments each finger rotates in the closing direction until it touches the object surface (in the container via scripts/dev/in-flash-chord, CPU only).
+stages/retarget/hand_reach.py	Moves the robot's nearer hand into place in the reference before the object moves (in the container via scripts/dev/in-flash-chord on the training host, CPU only).
+stages/retarget/hands_off.py	Makes the robot in the reference not reach for the object (in the container via scripts/dev/in-flash-chord on the training host, CPU only).
+stages/retarget/human_finger_closure.py	Whether the human fingers in Tier 2 bend during contact segments (in the container via scripts/dev/in-flash-chord, numpy and pyarrow only, read only; report only, no verdict).
+stages/retarget/one.sh	One sequence: convert, retarget (v0.4.0 + SOMAWithFlex, one-off CPU container), alignment check. Runs on the training host.
+stages/retarget/p2_compare.py	Puts the P2′ tables of the same episodes on two Tier 3 reconstruction versions side by side per episode (Mac, stdlib only, reads saved results only).
+stages/retarget/p2_table.py	Judges one batch retarget record per episode by P2′ (Mac, stdlib only, reads saved results only).
+stages/retarget/p2_vs_theirs.py	Compares our P2′ table per episode with the provider's record from running the same threshold code on their side (Mac, stdlib only, reads saved results only).
+stages/retarget/parquet_columns.py	Lists each column of a motion parquet: type and shape (when it converts to an array), and marks columns that change per frame (in the container via scripts/dev/in-flash-chord, read only).
+stages/retarget/parquet_repath.py	Replaces the absolute path prefix of object meshes and URDF in a motion parquet with /repo of the training container (in the container via scripts/dev/in-flash-chord, CPU only).
+stages/retarget/ref_clearance.py	How close the robot gets to the object before contact in the reference (in the container via scripts/dev/in-flash-chord, CPU only; read only, report only).
+stages/retarget/ref_foot_slide.py	Whether the support foot slides on the ground in the reference (in the container via scripts/dev/in-flash-chord, CPU only; read only, report only).
+stages/retarget/ref_hand_object_slip.py	Whether a held object slips relative to the palm in the reference (in the container via scripts/dev/in-flash-chord, CPU only; reads the reference parquet only, report only).
+stages/retarget/ref_hand_object_turn.py	Whether a held object turns together with the palm orientation in the reference (in the container via scripts/dev/in-flash-chord, CPU only; reads the reference parquet only, report only).
+stages/retarget/ref_joint_speed.py	Joint speeds before first contact in all references of one tier, and on which joints an episode is faster than all good episodes (in the container, numpy and pyarrow only; read only, report only).
+stages/retarget/ref_limits.py	Joints at their limits in all references of one tier (in the container via scripts/dev/in-flash-chord, CPU only; read only, report only).
+stages/retarget/ref_object_turns.py	Statistics of object rotation between adjacent frames in a reference motion parquet (in the container via scripts/dev/in-flash-chord, CPU only; read only, report only).
+stages/retarget/ref_penetration.py	How deep the robot hand goes into the object in the reference (in the container via scripts/dev/in-flash-chord, CPU only; read only, report only).
+stages/retarget/ref_root_speed.py	How fast the robot root (pelvis) must move in all references of one tier (in the container via scripts/dev/in-flash-chord, numpy and pyarrow only; read only, report only).
+stages/retarget/ref_turn_load.py	How hard the walk-while-turning is before first contact in all references of one tier (in the container via scripts/dev/in-flash-chord, numpy and pyarrow only; read only, report only).
+stages/retarget/run_soma_to_g1.py	Runs the official scripts/retarget/soma_to_g1.py with SOMAWithFlex (in the container) and fixes the output fps.
+stages/retarget/soma_flex.py	Wraps the official read_soma.SOMA so that it passes bone_length_flexibles to SOMALayer.
+stages/retarget/stand_still.py	Makes the robot in the reference stand in place without a step (in the container via scripts/dev/in-flash-chord on the training host, CPU only).
+stages/retarget/stand_still_batch.sh	t3static: writes standing references for given episodes to runs/motion/tier3_st (plan agent-doc/plan-t3static-2026-10-21.md section 1 step 1).
+stages/retarget/stand_still_dryrun.sh	t3static: dry-run of stand_still.py for given episodes (read only, no files written); reports the closest robot-object distance at frame 0 per episode (plan section 2 S2 pilot selection).
+stages/retarget/support_penetration.py	Penetration of the object mesh into support and ground in reference trajectories (Mac, via uv with numpy and pyarrow; reads locally downloaded data only, Tier 1).
+stages/retarget/t3hand_diag.sh	Hand-object diagnostics for Tier 3 lost-track episodes (training host, in the container via scripts/dev/in-flash-chord, CPU only, reads reference parquet only; report only).
+stages/retarget/t3hand_summary.py	Summary of the t3hand diagnostics (Mac or training host with python3, stdlib only). Plan agent-doc/plan-t3hand-2026-10-27.md section 0.
+stages/retarget/test_challenge_to_soma.py	Tests of challenge_to_soma (runs on the host, no container needed).
+stages/retarget/test_contact_relabel.py	Tests of contact_relabel.py (no contract ID yet; plan agent-doc/plan-t1-contact-anticipation-2026-10-16.md). Needs numpy and pyarrow (runs in the flash_chord container).
+stages/retarget/test_hand_reach.py	hand_reach: cosine transition and one-frame damped least-squares hand pull (synthetic 2-joint planar arm).
+stages/retarget/test_p2_compare.py	Tests of p2_compare.py (guards plan agent-doc/plan-t3-simreg-p2-2026-10-11.md section 2 step 4: two P2′ tables side by side per episode, report only; no contract ID yet). Stdlib only.
+stages/retarget/test_p2_table.py	Tests of p2_table.py (guards the P2′ criterion in section 4 of plan agent-doc/plan-t3-v2-retarget18-2026-10-10.md; no contract ID yet). Stdlib only.
+stages/retarget/test_p2_vs_theirs.py	Tests of p2_vs_theirs.py (guards plan agent-doc/plan-t3-hm-p2-2026-10-12.md section 5, comparison with the provider's records: report only; no contract ID yet). Stdlib only.
+stages/retarget/test_soma_flex.py	Tests of SOMAWithFlex. Runs in the robotic-grounding image (the official package is installed only in the container).
+stages/retarget/waist_cap.py	Reduces waist bending before contact in the reference (in the container via scripts/dev/in-flash-chord on the training host, CPU only).
+tools/arm_after_yield.sh	Yields the GPU to one job of a teammate, then restarts the same-name segment after it ends (training host, repo root, setsid). Plan agent-doc/plan-t3auc1-2026-11-03.md, log 11/03 12:0x MST.
+tools/arm_when_gpu_free.sh	Waits until the GPU is idle for a set time, then starts a chain segment (training host, repo root, setsid in background). Plan agent-doc/plan-t2auc3-2026-11-02.md, log 11/03 02:2x.
+tools/board_snapshot.sh	Prints one snapshot of each of the 12 Track 2 Kaggle leaderboards (called by tools/board_watch.sh, saved via scripts/dev/record). Argument: path of the kaggle CLI.
+tools/board_watch.sh	Watches the Kaggle leaderboards on a schedule (Mac; credentials only via ~/.kaggle/access_token read by the kaggle CLI itself, never on the command line or in logs).
+tools/board_whatif.py	What if maniphys.ai resubmits one tier: replaces this team's four scores for that tier in a leaderboard snapshot with given values and saves a new snapshot for track2_rank_sum.py.
+tools/challenge_faq_text.py	Downloads the FAQ (PDF) from the challenge website and prints its sha256 and full text (Mac; reads public pages only, no credentials).
+tools/ckpt_check_remote.sh	Checks one by one on the training host the checkpoints used by counted submissions (runs/inventory/ckpt_<host>.tsv from tools/counted_inventory.py: sha256, path in the container).
+tools/ckpt_exposure.py	What the checkpoints in the archive list would expose once public (read only; training host, repo root, via scripts/dev/pipe-py, stdlib only).
+tools/compare_motion_inputs.py	Compares tools/motion_inputs_remote.sh records from two hosts: for sequences to train on a training host, is the reference parquet there the same one the baseline run trained with.
+tools/episode_runs_table.py	All runs tried for given episodes: 4096-world evaluation success rate, error and failure reasons side by side per episode (Mac, reads saved results only, stdlib only).
+tools/find_ckpt_remote.sh	Finds checkpoints with lost paths by sha256 on one host (read only). No stdin; arguments are a TSV (sha256, run name) and search root directories.
+tools/gpu_procs_remote.sh	Read-only server snapshot: command line, elapsed time and ancestor chain of each GPU compute process; commands and mounts of all running containers; other users of GPU processes on the host.
+tools/hf_archive.py	Archives state and policy files no longer needed on the training host to a Hugging Face repo, and deletes the local copies after the check passes (training host, repo root).
+tools/hf_archive_delete_checked.sh	Deletion step of the HF archive, with the pre-delete alignment check and dry run, done by one command per the registered criteria (training host, run from runs/tools/).
+tools/hf_archive_report.py	Summarizes the check, spot check and local state of one HF archive run (training host, repo root, read only, stdlib only).
+tools/hf_archive_run.sh	Full archive flow (training host, repo root, setsid nohup in background): upload, check, spot check, delete. Stops if any step fails.
+tools/hf_remote.sh	Runs a command on the training host with Hugging Face credentials (Mac, repo root). HF_TOKEN and V2D_PROXY come from .env (scripts/dev/_load-env).
+tools/hf_research_archive.py	Post-challenge research archive: splits one host's Track 2 data by rules into public and private parts, scans for credentials, uploads to HF, then checks and spot checks (upload only, no delete).
+tools/hf_research_launch.sh	Plan parameters for three hosts; starts tools/hf_research_remote.sh per host (Mac, repo root).
+tools/hf_research_prep.sh	Prep step of the post-challenge research archive (on the host, plain ssh, no credentials): compresses the FlashCHORD copies into one base plus patches.
+tools/hf_research_remote.sh	Starts tools/hf_research_run.sh in the background on one host (Mac, repo root). Plan agent-doc/plan-hf-research-archive-2026-11-04.md.
+tools/hf_research_run.sh	Full flow of the post-challenge research archive on one host (on the host, started by tools/hf_research_remote.sh over ssh, setsid in background).
+tools/hf_transfer.py	Transfers directories between training hosts via a private Hugging Face repo (training host, repo root; credentials only via env var HF_TOKEN, proxy from https_proxy in the environment).
+tools/make_fc_patch.sh	Generates from GitHub the full patch from v0.4.0 (33129dd) to upstream 8c778f905c under robotic_grounding/flash_chord, plus the expected sha256 list of patched files.
+tools/motion_inputs_remote.sh	Read-only server check: are the training inputs of a set of sequences complete on this host, and the same ones a given run trained with. Sent and run via stdin.
+tools/near_miss_table.py	Episodes that pass SP but fail MP: success rate and mean object position and orientation errors from 4096-world evaluation records, with thresholds (Mac, repo root, stdlib only, read only).
+tools/queue_line_diff.sh	Compares the queue lines of two runs per episode: drops V2D_WANDB_TAG, compares by word and prints words found on one side only (plan agent-doc/plan-t1r3o-2026-10-31.md version 2).
+tools/repo_index.py	Generates the file indexes in each directory README (no contract ID yet: repo navigation). Reads only the git index and commit history, stdlib, runs with the Mac system python3.
+tools/seed_pair_diff.py	Paired runs with the same config and different seeds: lists both values of one column (default MP-SR) and their difference per pair, then the max and median of the differences.
+tools/select_4096_table.sh	4096-world readings for the run of each episode in a selection list (tier, episode, run, steps, host): ADD-AUC, MP-SR, SP-SR, MPPE (Mac, repo root, reads records only).
+tools/status_remote.sh	Read-only status snapshot of the training host (sent via stdin, changes no files): time, GPU, repo disk, our tmux sessions, long-chain markers.
+tools/submission_history.sh	Lists our team's submissions on each of the 12 Track 2 Kaggle leaderboards (read only, Mac), to count quota used in the last 7 days per leaderboard.
+tools/t1_list_export.py	Takes the four metrics of the export game per episode and computes the packed leaderboard score of a Tier 1 list (Tier 1 reference is the clean trajectory, local score matches the board exactly).
+tools/t1_multiworld_estimate.py	For each episode run in the submitted Tier 1 CSV: result of the submitted game beside the 4096-world success rate of the same checkpoint, then estimates exporting N games and submitting a success.
+tools/t1_pack_check.py	Checks that the result directory for Tier 1 packing matches the selection list per episode (Mac, repo root).
+tools/t2_export_vs_4096.py	Current Tier 2 submission list per episode: four metrics of the export game (export JSON, against our v5.4 reference) beside 4096-world evaluation (summary_json) (Mac, repo root, stdlib only).
+tools/t2_hand_join.py	Matches the 4096-world evaluation results per episode of a submission list with the reference hand survey of stages/evaluate/ref_hand_survey.py by sequence (Mac, stdlib only, reads local results/).
+tools/t2_lost_swap.py	Tier 2 lost-track episodes: MPPE and ADD-AUC of each candidate export game against our reference, and the total gain from switching these episodes to the lowest-MPPE run (Tier 2 data only).
+tools/t2_mppe_proxy.py	MPPE and success rate of each submitted Tier 2 episode run in 4096-world evaluation against our reference (denoised Tier 2 trajectory), sorted by MPPE from high to low.
+tools/t2_swap_totals.py	Totals of a Tier 2 list after swapping some episodes: export game (against our v5.4 reference) beside 4096-world evaluation, itemized by Q3 of agent-doc/plan-t2mx-2026-10-19.md.
+tools/t3_candidates_remote.sh	Read-only server snapshot: a teammate's Tier 3 depth-direction rest correction on ml40 (t3_depth_post.py, branch track2/tier3-recon at 5752307).
+tools/t3_episode_remote.sh	Read-only server check: files of given episodes in a teammate's Tier 3 reconstruction (/lab_data/<dir>/v2d/tier3/runs/tier3_cari4d), whether we can read them, and metadata content.
+tools/t3_evidence_fetch.sh	Read-only copy of a teammate's Tier 3 best_hm per-frame evidence tables ($T/dev/perframe/hm/ep*.csv and summary.json) from ml40 into this repo; checks each sha256 against the registered snapshot.
+tools/t3_health_remote.sh	Reads health items and 4096-world readings of one Tier 3 run on the training host (read only): count of r3o term lines in smoke and full training logs, last nanwatch line.
+tools/t3_init_outputs_remote.sh	Read-only check on ml40: files of a teammate's initialization pilot (runs/work_init) and its source (runs/work_fp) in the CARI4D output directory, and pipeline_report.json content.
+tools/t3_init_pilot_remote.sh	Read-only check on ml40: what a teammate's CARI4D initialization pilot (t3_init_pilot.sh) from early 10/16 left behind (sent via stdin; output redacted via tools/redact_stdin.sh before saving).
+tools/t3_kgb_remote.sh	Read-only check on ml40: progress and method of a teammate's re-expression with calibrated intrinsics since 10/16 (t3_focal_all.sh convert convert_kgb intrinsics_gb.json).
+tools/t3_queue_remote.sh	Read-only server snapshot: which episode a teammate's Track 2 Tier 3 CARI4D reconstruction queue on ml40 has reached, with check verdicts and outputs per episode. Sent and run via stdin.
+tools/t3_recon_survey_remote.sh	Read-only server survey: current contents of a teammate's Tier 3 reconstruction output directory on ml40 (top-level layout, files changed in the last 3 days, delivery directory, reports and notes).
+tools/t3_record_compare.py	Compares sha256 of the same relative path across several tools/t3_episode_remote.sh records (read only, stdlib only). Plan agent-doc/plan-t3dyn-pilot-2026-10-14.md section 1.
+tools/t3auc1_gb4_stage.sh	Plan agent-doc/plan-t3auc1-2026-11-03.md section 1: packs the Tier 3 gb4 reference needed by the 10M arms (ep0, 26, 18) on ml40 into a tar and sends it to ml40 via the private HF transfer repo.
+tools/test_hf_archive.py	Behavior tests of the offline parts of tools/hf_archive.py: file selection rules and deletion (no contract ID yet: ops tool). Stdlib only, runs on the Mac and the training host.
+tools/test_hf_archive_delete_checked.py	Behavior tests of hf_archive_delete_checked.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+tools/test_hf_remote.py	Credential filter tests of tools/hf_remote.sh (no contract ID yet: run spec not written). Stdlib only, runs on the Mac.
+tools/test_hf_research_archive.py	Behavior tests of the offline parts (plan, scan, stage) of tools/hf_research_archive.py (no contract ID yet: ops tool). Stdlib only.
+tools/test_hf_research_fastscan.py	Checks that scan --fast (GNU grep prefilter) of tools/hf_research_archive.py gives the same result as the slow scan (no contract ID yet: ops tool). Useful only on hosts with GNU grep.
+tools/test_hf_transfer.py	Behavior tests of hf_transfer.py (no contract ID yet: run spec not written). Stdlib only, runs on the Mac and the training host.
+tools/test_t2_swap_totals_t3.sh	Tests of t2_swap_totals.py --tier 3 (Mac, repo root, reads records only; plan agent-doc/plan-t3auc1-2026-11-03.md section 2).

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# 一次性准备远端目录：建目录、放哨兵、显式推送 .env。
+#
+# .env 单独 scp 而不是让 rsync 带过去，是因为它在 .gitignore 里，而 rsync
+# 正是用 .gitignore 做过滤 —— 凭证的传输应当是显式动作，不该被自动同步捎带。
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+. "$ROOT/scripts/dev/_load-env"
+ssh "$V2D_HOST" "mkdir -p '$V2D_REMOTE' && touch '$V2D_REMOTE/.v2d-remote-root'"
+scp -q "$ROOT/.env" "$V2D_HOST:$V2D_REMOTE/.env"
+ssh "$V2D_HOST" "chmod 600 '$V2D_REMOTE/.env'"
+echo "远端已初始化: ${V2D_HOST}:${V2D_REMOTE}"

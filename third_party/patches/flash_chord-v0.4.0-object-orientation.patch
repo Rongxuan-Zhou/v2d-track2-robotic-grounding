@@ -1,0 +1,192 @@
+# V2D 物体朝向奖励补丁（不是上游的提交）：打在“FlashCHORD v0.4.0（33129dd）+ #185 补丁 + 非有限防护补丁”之上
+# （先打 flash_chord-v0.4.0-cube-support-scale-8c778f9.patch、flash_chord-v0.4.0-nonfinite-guard.patch），生成训练用的源码副本
+# fc_src/v040_p185_nfg_oo（stages/policy/make_patched_fc_src.sh 的第三个补丁参数）。只用于训练；评测与导出仍用与上游 8c778f9 逐字节相同的副本。
+# 改两个上游文件、加一个新文件（计划 agent-doc/plan-r3o-2026-10-15.md 2.1）：
+#   objectives/recon_body.py：ReconBody 目标函数加第 13 项 object_orientation = exp(-θ²/σ²)，θ 是仿真物体朝向与 command 目标朝向的测地角，
+#     与物体朝向终止用的是同一个量；评分按 13 项求和；set_weights 收课程给的 12 个上游名字，第 13 项补上环境变量给的权重；
+#   lifecycle/curriculum.py：weights_for 遇到第 13 项而课程没写时，补上同一个权重（FlashSAC 的学习器按它重算奖励）；
+#   v2d_extras.py（新文件）：V2D_OBJ_ORI_WEIGHT（默认 0）、V2D_OBJ_ORI_STD（默认 0.4）的读取与校验。
+# 权重与 σ 不进 Hydra 配置：checkpoint 存的是解析后的配置，评测器按它重建环境，多出的键会被拒读；课程与目标函数的配置因此保持上游的 12 项。
+# 权重 0 时目标函数的分数与上游逐位相同（V2D 仓库 stages/policy/oo_test_kernels.py 核对）；学习器重算奖励按 13 项求和，浮点归约顺序可能变。
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/objectives/recon_body.py b/robotic_grounding/flash_chord/src/flash_chord/objectives/recon_body.py
+--- a/robotic_grounding/flash_chord/src/flash_chord/objectives/recon_body.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/objectives/recon_body.py
+@@ -22,6 +22,7 @@
+ from flash_chord.runtime.command import CommandBuffers
+ from flash_chord.runtime.contact import ContactTracker
+ from flash_chord.utils.quat import quat_geodesic_angle, quat_mul_xyzw
++from flash_chord.v2d_extras import OBJECT_ORIENTATION_TERM, STD_ENV, WEIGHT_ENV, object_orientation_params
+ 
+ RECON_BODY_OBJECTIVE_TERM_NAMES = (
+     "termination",
+@@ -37,7 +38,10 @@
+     "palm_orientation",
+     "force_closure",
+ )
+-_RECON_BODY_OBJECTIVE_TERM_COUNT = wp.constant(12)
++# V2D: the training copy appends an object-orientation term; curricula and configs keep the 12 upstream names
++# (flash_chord/v2d_extras.py explains why its weight and std come from the environment).
++_V2D_RECON_BODY_TERM_NAMES = RECON_BODY_OBJECTIVE_TERM_NAMES + (OBJECT_ORIENTATION_TERM,)
++_RECON_BODY_OBJECTIVE_TERM_COUNT = wp.constant(13)
+ 
+ 
+ @dataclass(frozen=True)
+@@ -208,6 +212,7 @@
+     soft_upper: wp.array(dtype=wp.float32),
+     object_body_id: int,
+     object_target_pos_w: wp.array(dtype=wp.vec3),
++    object_target_quat_w: wp.array(dtype=wp.quat),
+     pelvis_body_id: int,
+     num_frames: int,
+     bodies_per_world: int,
+@@ -220,6 +225,7 @@
+     object_position_std: float,
+     palm_position_std: float,
+     palm_orientation_std: float,
++    object_orientation_std: float,
+     weights: wp.array(dtype=wp.float32),
+     frame_dt: float,
+     terms: wp.array(dtype=wp.float32),
+@@ -276,6 +282,13 @@
+     object_position = wp.transform_get_translation(body_q[body_base + object_body_id])
+     object_error = object_position - object_target_pos_w[world]
+     terms[term_base + 7] = wp.exp(-wp.dot(object_error, object_error) / (object_position_std * object_position_std))
++    # V2D: same angle as the ReconBody object-orientation termination (rotation of the object body vs its command target).
++    object_orientation_error = quat_geodesic_angle(
++        wp.transform_get_rotation(body_q[body_base + object_body_id]), object_target_quat_w[world]
++    )
++    terms[term_base + 12] = wp.exp(
++        -(object_orientation_error * object_orientation_error) / (object_orientation_std * object_orientation_std)
++    )
+ 
+     denominator = num_frames - 1 - episode_start_frame[world]
+     progress = float(1.0)  # noqa: UP018
+@@ -347,6 +360,8 @@
+     weights: wp.array
+     terms: wp.array
+     score: wp.array
++    object_orientation_weight: float = 0.0
++    object_orientation_std: float = 0.4
+ 
+     @classmethod
+     def build(
+@@ -420,6 +435,11 @@
+         )
+         cone_cos, cone_sin = friction_cone_angles(config.num_friction_cone_edges)
+         support_size = world_count * len(config.sides) * command.layout.num_bodies * config.num_wrench_basis
++        orientation_weight, orientation_std = object_orientation_params()
++        print(
++            f"V2D object_orientation term: weight={orientation_weight} std={orientation_std} ({WEIGHT_ENV}, {STD_ENV})",
++            flush=True,
++        )
+         return cls(
+             config=config,
+             world_count=world_count,
+@@ -451,20 +471,24 @@
+             wrench_contact_enabled=wp.ones(contact.layout.slots_per_world, dtype=wp.int32, device=device),
+             current_wrench_support=wp.zeros(support_size, dtype=wp.float32, device=device),
+             force_closure=wp.zeros(world_count, dtype=wp.float32, device=device),
+-            weights=wp.array(config.weights, dtype=wp.float32, device=device),
++            weights=wp.array(config.weights + (orientation_weight,), dtype=wp.float32, device=device),
+             terms=wp.zeros(
+-                world_count * len(RECON_BODY_OBJECTIVE_TERM_NAMES),
++                world_count * len(_V2D_RECON_BODY_TERM_NAMES),
+                 dtype=wp.float32,
+                 device=device,
+             ),
+             score=wp.zeros(world_count, dtype=wp.float32, device=device),
++            object_orientation_weight=orientation_weight,
++            object_orientation_std=orientation_std,
+         )
+ 
+     @property
+     def term_names(self) -> tuple[str, ...]:
+-        return RECON_BODY_OBJECTIVE_TERM_NAMES
++        return _V2D_RECON_BODY_TERM_NAMES
+ 
+     def set_weights(self, weights: Mapping[str, float]) -> None:
++        weights = dict(weights)
++        weights.setdefault(OBJECT_ORIENTATION_TERM, self.object_orientation_weight)  # V2D: curricula carry 12 names
+         if set(weights) != set(self.term_names):
+             raise ValueError(
+                 f"ReconBody objective weights must contain exactly {self.term_names}, got {tuple(weights)}"
+@@ -540,6 +564,7 @@
+                 self.soft_upper,
+                 self.object_body_id,
+                 self.command.body_target_pos_w,
++                self.command.body_target_quat_w,
+                 self.pelvis_body_id,
+                 self.num_frames,
+                 self.bodies_per_world,
+@@ -552,6 +577,7 @@
+                 self.config.object_position_std,
+                 self.config.palm_position_std,
+                 self.config.palm_orientation_std,
++                self.object_orientation_std,
+                 self.weights,
+                 self.frame_dt,
+             ],
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/lifecycle/curriculum.py b/robotic_grounding/flash_chord/src/flash_chord/lifecycle/curriculum.py
+--- a/robotic_grounding/flash_chord/src/flash_chord/lifecycle/curriculum.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/lifecycle/curriculum.py
+@@ -13,6 +13,8 @@
+ from collections.abc import Mapping
+ from dataclasses import dataclass
+ import math
++
++from flash_chord.v2d_extras import OBJECT_ORIENTATION_TERM, object_orientation_params
+ 
+ 
+ @dataclass(frozen=True)
+@@ -76,13 +78,16 @@
+ 
+     def weights_for(self, term_names: tuple[str, ...]) -> tuple[float, ...]:
+         """Return weights in a strategy's fixed term order after exact name validation."""
++        weights = dict(self.objective_weights)
++        if OBJECT_ORIENTATION_TERM in term_names and OBJECT_ORIENTATION_TERM not in weights:
++            weights[OBJECT_ORIENTATION_TERM] = object_orientation_params()[0]  # V2D: curricula carry 12 names
+         expected = set(term_names)
+-        actual = set(self.objective_weights)
++        actual = set(weights)
+         if actual != expected:
+             missing = sorted(expected - actual)
+             unexpected = sorted(actual - expected)
+             raise ValueError(f"curriculum objective weights mismatch: missing={missing}, unexpected={unexpected}")
+-        return tuple(self.objective_weights[name] for name in term_names)
++        return tuple(weights[name] for name in term_names)
+ 
+ 
+ @dataclass(frozen=True)
+diff --git a/robotic_grounding/flash_chord/src/flash_chord/v2d_extras.py b/robotic_grounding/flash_chord/src/flash_chord/v2d_extras.py
+new file mode 100644
+--- /dev/null
++++ b/robotic_grounding/flash_chord/src/flash_chord/v2d_extras.py
+@@ -0,0 +1,28 @@
++# SPDX-License-Identifier: Apache-2.0
++"""V2D object-orientation reward switch for the ReconBody objective (not part of upstream FlashCHORD).
++
++The training copy adds a 13th ReconBody objective term, ``object_orientation`` = exp(-theta^2 / std^2), where theta is the
++geodesic angle between the simulated object and its command target (the same quantity the termination check uses).
++Its weight and std come from the environment, not from Hydra: a checkpoint stores its resolved configuration, and the
++evaluator (a copy byte-identical to upstream 8c778f9) rebuilds the environment from it, so any extra key would make the
++evaluator reject the checkpoint. Curricula therefore keep the 12 upstream names; the 13th weight is the same in every
++stage. With the default weight 0 the objective score equals the upstream score bit for bit.
++"""
++
++import math
++import os
++
++OBJECT_ORIENTATION_TERM = "object_orientation"
++WEIGHT_ENV = "V2D_OBJ_ORI_WEIGHT"
++STD_ENV = "V2D_OBJ_ORI_STD"
++
++
++def object_orientation_params() -> tuple[float, float]:
++    """Return (weight, std); the weight must be finite and non-negative, the std finite and positive."""
++    weight = float(os.environ.get(WEIGHT_ENV, "0"))
++    std = float(os.environ.get(STD_ENV, "0.4"))
++    if not math.isfinite(weight) or weight < 0.0:
++        raise ValueError(f"{WEIGHT_ENV} must be finite and non-negative, got {weight}")
++    if not math.isfinite(std) or std <= 0.0:
++        raise ValueError(f"{STD_ENV} must be finite and positive, got {std}")
++    return weight, std

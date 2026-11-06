@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# 跑一条命令，把输出连同溯源信息落盘到 results/<名字>.txt（仓库根执行；训练机上经 scripts/dev/remote 调用）。
+#
+# 与 stages/recovery/run_analyses.sh 同一约定：实验记录和 SOP 里的每个数，都要能指回产生它的脚本、
+# 源码版本、机器和时间。脚本写在 /tmp 或 heredoc 里跑出来的数，事后无法复现也无法排查。
+# 服务器上的副本不是 git 仓，源码版本读 scripts/dev/remote 写下的 .v2d-source-commit。
+# 变量后面紧跟全角字符时一律写成 ${VAR}：macOS 自带的 bash 3.2 在 UTF-8 下会把全角字符的字节读进变量名。
+# 命令里出现的仓内文件（含容器内 /repo/ 开头的路径）逐个记 md5。命令失败或输出含 Traceback 时退出码非零。
+# 先写 <名字>.txt.partial，成功才改名为 <名字>.txt：ssh 断开（Mac 断网时远端进程收到 SIGHUP）或被杀时，
+# 半截输出不会冒充成结果，上一次的成功结果也不会被盖掉；失败的输出改名为 <名字>.txt.failed 留着排查。
+# 耗时长的命令别在前台 ssh 里跑，放 tmux 或 setsid nohup。
+#
+# 用法：scripts/dev/record <名字> <命令...>
+#   例：scripts/dev/remote scripts/dev/record day1/policy_inputs_mf4090 \
+#         python3 stages/policy/policy_inputs.py runs/flash_chord/<run>/policy_<N>.safetensors
+#   回流：scripts/dev/pull-results（V2D_ENV 指定的主机落到 results/<主机>/）
+set -uo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"; cd "$ROOT"
+NAME=${1:?用法：record <名字> <命令...>}; shift
+[ $# -gt 0 ] || { echo "record: 缺命令" >&2; exit 2; }
+[[ $NAME =~ ^[A-Za-z0-9_][A-Za-z0-9_./-]*$ && $NAME != *..* ]] || { echo "record: 名字非法：$NAME" >&2; exit 2; }
+OUT="results/$NAME.txt"; PART="$OUT.partial"; mkdir -p "$(dirname "$OUT")"
+md5of() { if command -v md5sum >/dev/null; then md5sum "$1" | cut -d' ' -f1; else md5 -q "$1"; fi; }
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  SRC="$(git describe --always --abbrev=12)"   # results/ 是产物，未提交的结果文件不算 dirty（同 scripts/dev/remote）
+  [ -n "$(git status --porcelain -- . ':(exclude)results')" ] && SRC="$SRC-dirty"
+else
+  SRC="$(cat .v2d-source-commit 2>/dev/null || echo unknown)"
+fi
+{
+  echo "# command  : $(printf '%q ' "$@")"
+  set -f   # 按空白拆开所有参数（容器命令字符串里的脚本路径也要认出来），但不做通配展开
+  for tok in $*; do
+    tok="${tok//[\'\"]/}"; tok="${tok#/repo/}"
+    [[ $tok != /* ]] && [ -f "$tok" ] && echo "# md5      : $(md5of "$tok")  $tok"
+  done
+  set +f
+  echo "# source   : $SRC"
+  echo "# host     : $(hostname)"
+  echo "# run_at   : $(date '+%FT%T%z')"
+  echo "# ---------------------------------------------------------------"
+} > "$PART"
+"$@" >> "$PART" 2>&1; rc=$?
+# V2D_RECORD_TRACEBACK_OK=1：命令自己的退出码就是结论（例如带负面用例的测试集，输出里可能有预期中的 Traceback），
+# 不再按 Traceback 判失败。
+if [ $rc -ne 0 ] || { [ "${V2D_RECORD_TRACEBACK_OK:-0}" != 1 ] && grep -q "Traceback" "$PART"; }; then
+  mv -f "$PART" "$OUT.failed"
+  echo "record: 失败（退出码 ${rc}）→ ${OUT}.failed" >&2; tail -5 "$OUT.failed" >&2; exit $(( rc ? rc : 1 ))
+fi
+mv -f "$PART" "$OUT"; rm -f "$OUT.failed"
+echo "record: → ${OUT}（$(wc -l < "$OUT" | tr -d " ") 行）"

@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t3-ep27-w2048-cap10m-r3a-gb5hr2dyn7-ml40	smoke-t3-ep27-w2048-cap10m-r3a-gb5hr2dyn7-ml40	2026-05-01_11-15-05_woven_basket_ground_desk_10	frame	565	true	0.015	0.086	10000000	42	no

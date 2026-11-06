@@ -1,0 +1,7 @@
+# Tier 1 变体 A 补跑的候选导出（计划 agent-doc/plan-t1-r3x-2026-10-08.md）：档位 episode run 步数。make_r3x_queue.py 生成，不要手改。
+1	0	t1-ep0-w2048-cap4m-r3a-mf4090	349999104
+1	15	t1-ep15-w2048-cap4m-r3a-mf4090	349999104
+1	5	t1-ep5-w2048-cap4m-r3a-mf4090	349999104
+1	0	t1-ep0-w2048-cap4m-r3a-s43-mf4090	349999104
+1	15	t1-ep15-w2048-cap4m-r3a-s43-mf4090	349999104
+1	5	t1-ep5-w2048-cap4m-r3a-s43-mf4090	349999104

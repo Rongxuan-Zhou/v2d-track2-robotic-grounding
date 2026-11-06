@@ -1,0 +1,3 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t2-ep13-w2048-cap10m-r3a-s43-ml40	smoke-t2-ep13-w2048-cap10m-r3a-s43-ml40	2026-06-09_10-19-09_snack_box_desk_through_06	frame	922	true	0.015	0.086	10000000	43	no
+t2-ep19-w2048-cap10m-r3a-s43-ml40	smoke-t2-ep19-w2048-cap10m-r3a-s43-ml40	2026-05-19_10-19-48_cane_swing_05	frame	886	false	0.015	0.086	10000000	43	no

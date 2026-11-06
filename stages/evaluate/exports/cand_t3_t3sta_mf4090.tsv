@@ -1,0 +1,4 @@
+# 同上，t3sta 的候选导出（计划 agent-doc/plan-t3static-2026-10-21.md）：档位 episode run 步数。手写（只评冒烟那一步，复核 MAJOR 1）。
+3	16	smoke-t3-ep16-w2048-cap4m-r3a-st-mf4090	409600
+3	23	smoke-t3-ep23-w2048-cap4m-r3a-st-mf4090	409600
+3	1	smoke-t3-ep1-w2048-cap4m-r3a-st-mf4090	409600

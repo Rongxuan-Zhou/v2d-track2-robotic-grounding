@@ -1,0 +1,5 @@
+# Tier 3 gb5（gb4 上重选 FoundationPose 集的物体位姿）：跟丢集的变体 A seed 42（mf4090，buffer 400 万，参考是 runs/motion/tier3_gb5，基线取 Tier 2 导出清单，支撑面按 gb5），段 t3pg5a 的候选导出（计划 agent-doc/plan-t3g5-2026-10-21.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	5	t3-ep5-w2048-cap4m-r3a-gb5-mf4090	349999104
+3	10	t3-ep10-w2048-cap4m-r3a-gb5-mf4090	349999104
+3	15	t3-ep15-w2048-cap4m-r3a-gb5-mf4090	349999104
+3	27	t3-ep27-w2048-cap4m-r3a-gb5-mf4090	349999104

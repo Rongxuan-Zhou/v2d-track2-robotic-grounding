@@ -1,0 +1,8 @@
+# t2rp：Tier 2 全失败的 ep4、28、1、9、2、11、17 冒烟密存档的第 409600 步（参考回放），4096 世界评测（计划 agent-doc/plan-t2rp-2026-10-19.md 第 1 节）。day2_eval_chain.sh 的附加表：eval run 步数 回放 源帧数。
+eval	smoke-t2-ep4-w2048-cap4m-r3a-sd-mf4090	409600	frame	803
+eval	smoke-t2-ep28-w2048-cap4m-r3a-sd-mf4090	409600	frame	988
+eval	smoke-t2-ep1-w2048-cap4m-r3a-sd-mf4090	409600	frame	747
+eval	smoke-t2-ep9-w2048-cap4m-r3a-sd-mf4090	409600	frame	870
+eval	smoke-t2-ep2-w2048-cap4m-r3a-sd-mf4090	409600	frame	980
+eval	smoke-t2-ep11-w2048-cap4m-r3a-sd-mf4090	409600	frame	901
+eval	smoke-t2-ep17-w2048-cap4m-r3a-sd-mf4090	409600	frame	440

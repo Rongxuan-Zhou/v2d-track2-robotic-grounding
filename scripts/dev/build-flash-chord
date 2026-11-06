@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 构建 FlashCHORD 镜像（训练机上执行）。与官方 flash_chord/docker/run.sh build 同一 Dockerfile、
+# 同一镜像名 flash_chord:latest，所以之后官方 run.sh start/exec 可以直接用。
+# 唯一差别：传代理 build-arg 并用 host 网络——这台机器在国内，构建阶段 uv sync 要访问 PyPI。
+# 代理 URL 含账号密码：--build-arg 只写变量名，值由 docker 从环境变量读取，不进 argv——
+# 这台机器多人共用，argv 对所有用户的 ps 可见（CLAUDE.md：凭据不落命令行）。
+# 代理类 build-arg 属于 docker 预定义 ARG，不会写进 docker history。
+# CUDA_TAG / UV_TAG 不传，取 Dockerfile 的默认值（与 run.sh 默认一致）。官方 run.sh 不改。
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+FC="$ROOT/third_party/video_to_data/robotic_grounding/flash_chord"
+# V2D_BUILD_DIRECT=1：直连构建，不读 .env、不传代理。给 ml40 用——它经 registry-mirrors 拉 base，PyPI / apt / ghcr
+# 直连可达，用不着代理，带账号密码的代理也就不必进入那台机器的构建环境。
+if [ "${V2D_BUILD_DIRECT:-0}" = 1 ]; then
+  exec env DOCKER_BUILDKIT=1 docker build --network host \
+    -f "$FC/docker/Dockerfile" -t flash_chord:latest "$FC"
+fi
+set -a; . "$ROOT/.env"; set +a
+: "${V2D_PROXY:?.env 缺少 V2D_PROXY}"
+export http_proxy="$V2D_PROXY" https_proxy="$V2D_PROXY" HTTP_PROXY="$V2D_PROXY" HTTPS_PROXY="$V2D_PROXY"
+DOCKER_BUILDKIT=1 docker build --network host \
+  --build-arg http_proxy --build-arg https_proxy --build-arg HTTP_PROXY --build-arg HTTPS_PROXY \
+  -f "$FC/docker/Dockerfile" -t flash_chord:latest "$FC"

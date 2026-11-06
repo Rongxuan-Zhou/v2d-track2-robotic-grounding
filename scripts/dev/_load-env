@@ -1,0 +1,18 @@
+# shellcheck shell=bash
+# 由 remote / init-remote / pull-results / pull-runs 用 `. "$ROOT/scripts/dev/_load-env"` 引入，不单独执行。
+#
+# .env 放共用变量与凭据；V2D_ENV=<名字> 时再叠加 .env.<名字>，那个文件只写 V2D_HOST / V2D_REMOTE。
+# 名字写错必须报错退出，不能静默回落到 .env 的默认主机：remote 带 --delete，推错机器的代价是删文件。
+# 目标打印到 stderr，每次执行都能看到这次连的是哪台。
+[ -f "$ROOT/.env" ] || { echo "缺少 $ROOT/.env（从 .env.example 复制）" >&2; exit 1; }
+set -a; . "$ROOT/.env"; set +a
+if [ -n "${V2D_ENV:-}" ]; then
+  [[ "$V2D_ENV" =~ ^[A-Za-z0-9_-]+$ ]] || { echo "V2D_ENV 非法: '$V2D_ENV'" >&2; exit 1; }
+  [ -f "$ROOT/.env.${V2D_ENV}" ] || { echo "V2D_ENV=${V2D_ENV}，但缺少 ${ROOT}/.env.${V2D_ENV}" >&2; exit 1; }
+  set -a; . "$ROOT/.env.$V2D_ENV"; set +a
+fi
+: "${V2D_HOST:?缺少 V2D_HOST}"
+: "${V2D_REMOTE:?缺少 V2D_REMOTE}"
+# 回流落地用的主机标签（runs/<标签>/、results/<标签>/）
+V2D_HOST_TAG="$(printf '%s' "$V2D_HOST" | tr -c 'A-Za-z0-9_-' '_')"
+echo "→ ${V2D_HOST}:${V2D_REMOTE}${V2D_ENV:+  (V2D_ENV=$V2D_ENV)}" >&2

@@ -1,0 +1,3 @@
+# Tier 1 r3o 用 1000 万：seed 42，两段各两集（ep19、13；ep3、16），ml40；配方取 10/9 清单里同集的 run，换集时对照现在的规则清单（1000 万 r3a），段 t1zw 的候选导出（计划 agent-doc/plan-t1r3o-2026-10-31.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	19	t1-ep19-w2048-cap10m-r3o-ml40	349999104
+1	13	t1-ep13-w2048-cap10m-r3o-ml40	349999104

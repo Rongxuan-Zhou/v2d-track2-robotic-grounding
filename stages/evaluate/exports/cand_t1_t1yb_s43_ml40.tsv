@@ -1,0 +1,2 @@
+# Tier 1 追基线：1 世界 SP-SR 失败、Tier 2 变体 A 的 4096 世界 SP-SR 不低于 0.4 的 5 条的变体 A seed 42（ml40，buffer 1000 万，基线取 10/9 逐条选的清单），段 t1yb_s43 的候选导出（计划 agent-doc/plan-t1-chase-2026-10-13.md）：档位 episode run 步数。本段改种子：种子 43（reset.seed=43 training.seed=43）。make_var_queue.py 生成，不要手改。
+1	19	t1-ep19-w2048-cap10m-r3a-s43-ml40	349999104

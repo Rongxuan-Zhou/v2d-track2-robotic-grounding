@@ -1,0 +1,9 @@
+# Tier 3 最终交付版 best_hm：变体 A seed 42（ml40，buffer 1000 万，参考是 runs/motion/tier3_hm，基线取 Tier 2 导出清单，支撑面按 best_hm），段 t3qa 的候选导出（计划 agent-doc/plan-d-t3hm-train-2026-10-12.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	4	t3-ep4-w2048-cap10m-r3a-hm-ml40	349999104
+3	5	t3-ep5-w2048-cap10m-r3a-hm-ml40	349999104
+3	6	t3-ep6-w2048-cap10m-r3a-hm-ml40	349999104
+3	7	t3-ep7-w2048-cap10m-r3a-hm-ml40	349999104
+3	8	t3-ep8-w2048-cap10m-r3a-hm-ml40	349999104
+3	9	t3-ep9-w2048-cap10m-r3a-hm-ml40	349999104
+3	10	t3-ep10-w2048-cap10m-r3a-hm-ml40	349999104
+3	11	t3-ep11-w2048-cap10m-r3a-hm-ml40	349999104

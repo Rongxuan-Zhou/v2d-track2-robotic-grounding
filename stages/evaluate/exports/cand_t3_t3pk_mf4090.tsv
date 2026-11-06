@@ -1,0 +1,4 @@
+# Tier 3 k-fix 重训：现有策略跟不住新参考的 3 集，变体 A seed 42（mf4090，buffer 400 万，参考是 runs/motion/tier3_kfix，取法同 t3p3），段 t3pk 的候选导出（计划 agent-doc/plan-t3-kfix-retrain-2026-10-16.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	0	t3-ep0-w2048-cap4m-r3a-kfix-mf4090	349999104
+3	18	t3-ep18-w2048-cap4m-r3a-kfix-mf4090	349999104
+3	29	t3-ep29-w2048-cap4m-r3a-kfix-mf4090	349999104

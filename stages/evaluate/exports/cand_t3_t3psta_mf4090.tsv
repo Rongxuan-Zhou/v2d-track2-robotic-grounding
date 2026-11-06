@@ -1,0 +1,4 @@
+# Tier 3 站立保底：跟丢的 15 集，参考是 runs/motion/tier3_st（机器人全程停在第 0 帧、物体轨迹照抄），变体 A seed 42（mf4090，buffer 400 万），冒烟每 409600 步存一份、只评第 409600 步；正式训练用停链标记挡住，段 t3psta 的候选导出（计划 agent-doc/plan-t3static-2026-10-21.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	16	t3-ep16-w2048-cap4m-r3a-st-mf4090	349999104
+3	23	t3-ep23-w2048-cap4m-r3a-st-mf4090	349999104
+3	1	t3-ep1-w2048-cap4m-r3a-st-mf4090	349999104

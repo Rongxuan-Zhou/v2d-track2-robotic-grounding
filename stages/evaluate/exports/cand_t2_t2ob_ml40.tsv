@@ -1,0 +1,6 @@
+# Tier 2 r3o 试点 P2：对照 ep12 与跟丢的 8 集，变体 A 加物体朝向项 seed 42（ml40，buffer 1000 万，基线取 Tier 2 导出清单），段 t2ob 的候选导出（计划 agent-doc/plan-r3o-2026-10-15.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+2	4	t2-ep4-w2048-cap10m-r3o-ml40	349999104
+2	17	t2-ep17-w2048-cap10m-r3o-ml40	349999104
+2	9	t2-ep9-w2048-cap10m-r3o-ml40	349999104
+2	2	t2-ep2-w2048-cap10m-r3o-ml40	349999104
+2	11	t2-ep11-w2048-cap10m-r3o-ml40	349999104

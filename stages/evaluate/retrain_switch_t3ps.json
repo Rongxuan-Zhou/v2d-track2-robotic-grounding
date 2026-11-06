@@ -1,0 +1,6 @@
+{
+  "step": 349999104,
+  "pairs": [
+    {"ep": 20, "new": "t3-ep20-w2048-cap4m-r3a-v2s-mf4090", "ref_dir": "tier3_v2s", "old": "t3-ep20-w2048-cap4m-r3a-v2-mf4090", "old_mp": 0.0, "old_sp": 0.8948}
+  ]
+}

@@ -1,0 +1,7 @@
+# Tier 3 校正版其余 10 集：变体 A seed 42（mf4090，buffer 400 万，参考是 runs/motion/tier3_v2 下校正版重建的那份，基线取 Tier 2 导出清单），段 t3p3b 的候选导出（计划 agent-doc/plan-t3-v2-train10-2026-10-10.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	18	t3-ep18-w2048-cap4m-r3a-v2-mf4090	349999104
+3	21	t3-ep21-w2048-cap4m-r3a-v2-mf4090	349999104
+3	22	t3-ep22-w2048-cap4m-r3a-v2-mf4090	349999104
+3	23	t3-ep23-w2048-cap4m-r3a-v2-mf4090	349999104
+3	26	t3-ep26-w2048-cap4m-r3a-v2-mf4090	349999104
+3	17	t3-ep17-w2048-cap4m-r3a-v2-mf4090	349999104

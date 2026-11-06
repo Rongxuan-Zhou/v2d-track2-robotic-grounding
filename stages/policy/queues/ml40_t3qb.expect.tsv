@@ -1,0 +1,9 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t3-ep0-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep0-w2048-cap10m-r3a-hm-ml40	2026-06-04_14-16-23_tall_bar_stool_tip_up_04	frame	778	false	0.015	0.086	10000000	42	no
+t3-ep18-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep18-w2048-cap10m-r3a-hm-ml40	2026-05-06_10-00-19_blue_trash_can_drag_sideways_08	frame	858	false	0.015	0.086	10000000	42	no
+t3-ep22-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep22-w2048-cap10m-r3a-hm-ml40	2026-05-22_16-52-36_step_ladder_drag_03	frame	719	false	0.015	0.086	10000000	42	no
+t3-ep24-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep24-w2048-cap10m-r3a-hm-ml40	2026-05-29_15-43-20_watering_can_pour_right_02	frame	748	false	0.015	0.086	10000000	42	no
+t3-ep26-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep26-w2048-cap10m-r3a-hm-ml40	2026-06-05_16-05-08_skateboard_rotate_ground_10	frame	669	false	0.015	0.086	10000000	42	no
+t3-ep20-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep20-w2048-cap10m-r3a-hm-ml40	2026-06-08_16-57-34_rice_cooker_clockwise_04	frame	553	true	0.015	0.086	10000000	42	no
+t3-ep23-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep23-w2048-cap10m-r3a-hm-ml40	2026-06-03_15-08-03_toy_stroller_back_forth_ground_04	frame	946	false	0.015	0.086	10000000	42	no
+t3-ep29-w2048-cap10m-r3a-hm-ml40	smoke-t3-ep29-w2048-cap10m-r3a-hm-ml40	2026-06-05_18-27-40_rolling_luggage_left_foot_push_06	frame	467	false	0.015	0.086	10000000	42	no

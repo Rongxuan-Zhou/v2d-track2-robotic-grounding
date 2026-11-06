@@ -1,0 +1,7 @@
+# 诊断运行表（ml40，计划 agent-doc/plan-t2dg-2026-10-20.md 第 1 节）：run 步数 角色（control / main）；第一行先用 16 个世界试跑
+t2-ep0-w2048-cap10m-r3a-ml40	349999104	control
+t2-ep25-w2048-cap10m-r3a-ml40	349999104	main
+t2-ep4-w2048-cap10m-r3a-ml40	349999104	main
+t2-ep17-w2048-cap10m-r3a-ml40	349999104	main
+t2-ep9-w2048-cap10m-r3a-ml40	349999104	main
+t2-ep28-w2048-cap10m-r3a-ml40	349999104	main

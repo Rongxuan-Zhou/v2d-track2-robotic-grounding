@@ -1,0 +1,2 @@
+# Tier 1 MPPE 榜：ep1 基础配方把手掌位置终止从 0.15 收到 0.05 m（pt05，不加变体 A）seed 42，mf4090，buffer 400 万；配方取 10/9 清单里同集的 run，段 t1hp2 的候选导出（计划 agent-doc/plan-t1ep1-2026-11-02.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	1	t1-ep1-w2048-cap4m-pt05-mf4090	349999104

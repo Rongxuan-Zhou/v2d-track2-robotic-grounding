@@ -1,0 +1,4 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t3-ep0-w2048-cap4m-r3a-kfix-mf4090	smoke-t3-ep0-w2048-cap4m-r3a-kfix-mf4090	2026-06-04_14-16-23_tall_bar_stool_tip_up_04	frame	778	false	0.015	0.086	4000000	42	no
+t3-ep18-w2048-cap4m-r3a-kfix-mf4090	smoke-t3-ep18-w2048-cap4m-r3a-kfix-mf4090	2026-05-06_10-00-19_blue_trash_can_drag_sideways_08	frame	858	false	0.015	0.086	4000000	42	no
+t3-ep29-w2048-cap4m-r3a-kfix-mf4090	smoke-t3-ep29-w2048-cap4m-r3a-kfix-mf4090	2026-06-05_18-27-40_rolling_luggage_left_foot_push_06	frame	467	false	0.015	0.086	4000000	42	no

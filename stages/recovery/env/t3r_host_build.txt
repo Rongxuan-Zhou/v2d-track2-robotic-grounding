@@ -1,0 +1,3 @@
+# t3takeover 第 1b 级：宿主机环境里只有源码包的发行版（antlr4-python3-runtime 4.9.3）在 pip 的构建隔离环境里构建时用的 setuptools 版本，
+# 照她 venv 里该发行版 WHEEL 文件的 Generator 行（setuptools 84.0.0）；经 pip 26 的 --build-constraint 传给构建隔离环境。计划 agent-doc/plan-t3takeover-1b-2026-10-21.md。
+setuptools==84.0.0

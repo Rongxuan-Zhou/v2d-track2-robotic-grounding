@@ -1,0 +1,5 @@
+# Day 2b（用户 09-28 23:05 选 B：按“固定逐帧”处理）：ep13、ep10 的真实时长两臂取消；ep10 逐帧照原配置，另按同一规则补第 2 轮的中档 ep4、长档 ep2
+# （results/day2/pick_round2.txt）。全部逐帧回放、官方配方满配；只有地面的序列 scene.support=false。
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep10-w2048-cap10m-ml40 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-05-01_11-36-40_white_desk_lower_to_ground_10/robot_name=g1/data.parquet 2048 4096000 scene.support=false
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep4-w2048-cap10m-ml40 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-04-24_11-40-52_baseball_bat_rotate_05/robot_name=g1/data.parquet 2048 4096000 scene.support=false
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep2-w2048-cap10m-ml40 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-06-02_10-04-42_blue_easter_basket_place_10/robot_name=g1/data.parquet 2048 4096000

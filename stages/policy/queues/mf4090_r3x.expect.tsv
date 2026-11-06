@@ -1,0 +1,7 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep0-w2048-cap4m-r3a-mf4090	smoke-t1-ep0-w2048-cap4m-r3a-mf4090	2026-06-04_14-16-23_tall_bar_stool_tip_up_04	frame	778	false	0.015	0.086	4000000	42	no
+t1-ep15-w2048-cap4m-r3a-mf4090	smoke-t1-ep15-w2048-cap4m-r3a-mf4090	2026-05-06_11-06-15_wet_floor_sign_pick_place_ground_08	frame	715	false	0.015	0.086	4000000	42	no
+t1-ep5-w2048-cap4m-r3a-mf4090	smoke-t1-ep5-w2048-cap4m-r3a-mf4090	2026-03-18_19-36-56_g1_box_rotate_01	frame	1003	false	0.015	0.086	4000000	42	no
+t1-ep0-w2048-cap4m-r3a-s43-mf4090	smoke-t1-ep0-w2048-cap4m-r3a-s43-mf4090	2026-06-04_14-16-23_tall_bar_stool_tip_up_04	frame	778	false	0.015	0.086	4000000	43	no
+t1-ep15-w2048-cap4m-r3a-s43-mf4090	smoke-t1-ep15-w2048-cap4m-r3a-s43-mf4090	2026-05-06_11-06-15_wet_floor_sign_pick_place_ground_08	frame	715	false	0.015	0.086	4000000	43	no
+t1-ep5-w2048-cap4m-r3a-s43-mf4090	smoke-t1-ep5-w2048-cap4m-r3a-s43-mf4090	2026-03-18_19-36-56_g1_box_rotate_01	frame	1003	false	0.015	0.086	4000000	43	no

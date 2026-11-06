@@ -1,0 +1,6 @@
+# t2st：Tier 2 全失败的 ep25、ep28 训练早期的 checkpoint，4096 世界评测（计划 agent-doc/plan-t2st-2026-10-19.md 第 1 节）。day2_eval_chain.sh 的附加表：eval run 步数 回放 源帧数。
+eval	smoke-t2-ep25-w2048-cap4m-mf4090	4096000	frame	859
+eval	smoke-t2-ep25-w2048-cap4m-r3a-c5-mf4090	4096000	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	10000384	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	20000768	frame	859
+eval	smoke-t2-ep28-w2048-cap4m-p185-mf4090	4096000	frame	988

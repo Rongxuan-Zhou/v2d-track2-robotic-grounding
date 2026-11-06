@@ -1,0 +1,2 @@
+# Tier 3 ep20 换成交付版方块桌面重训：参考是 runs/motion/tier3_v2s（v2 的参考加方块桌面），变体 A seed 42（mf4090，buffer 400 万，取法同 t3p3），段 t3ps 的候选导出（计划 agent-doc/plan-t3-kfix-retrain-2026-10-16.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+3	20	t3-ep20-w2048-cap4m-r3a-v2s-mf4090	349999104

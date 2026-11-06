@@ -1,0 +1,50 @@
+{
+ "plan": "agent-doc/plan-t3-gb3-switch-2026-10-17.md 判据 G2（第 2 版）",
+ "step": 349999104,
+ "margin_cm": 4.0,
+ "sp_floor": 0.5,
+ "source": "现选 run 的 4096 世界值：results/t3probe/eval_table_probe1015.txt（10/11 的评测，10/16 核过与 fc_8c778f9 一致，results/t3kfix/reexport_checks_mf4090.txt）；ep20 取 results/t3kfix/retrain_switch_t3ps_mf4090.txt",
+ "pairs": [
+  {
+   "ep": 20,
+   "new": "t3-ep20-w2048-cap4m-r3a-gb3-mf4090",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep20-w2048-cap4m-r3a-v2s-mf4090",
+   "cur_mppe": 5.77,
+   "cur_sp": 0.8911,
+   "cur_mp": 0.0046,
+   "report_only": false
+  },
+  {
+   "ep": 0,
+   "new": "t3-ep0-w2048-cap4m-r3a-gb3-mf4090",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep0-w2048-cap4m-r3a-v2-mf4090",
+   "cur_mppe": 2.6,
+   "cur_sp": 0.992,
+   "cur_mp": 0.965,
+   "report_only": false
+  },
+  {
+   "ep": 22,
+   "new": "t3-ep22-w2048-cap4m-r3a-gb3-mf4090",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep22-w2048-cap4m-r3a-v2-mf4090",
+   "cur_mppe": 3.7,
+   "cur_sp": 0.98,
+   "cur_mp": 0.954,
+   "report_only": false,
+   "note": "10/16 定 ep22 留旧参考；进选集要 rxzhou 点头，并附 gb3 ep22 的人脚检验"
+  },
+  {
+   "ep": 21,
+   "new": "t3-ep21-w2048-cap4m-r3a-gb3-mf4090",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep21-w2048-cap4m-r3a-hm-mf4090",
+   "cur_mppe": 8.96,
+   "cur_sp": 0.876,
+   "cur_mp": 0.501,
+   "report_only": true
+  }
+ ]
+}

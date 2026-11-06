@@ -1,0 +1,2 @@
+# Tier 1 MPPE 榜：基础配方把抓握闭合项权重 5 → 20（fc20，不加变体 A）seed 42，ml40，buffer 1000 万；配方取 10/9 清单里同集的 run，段 t1hg2_s43 的候选导出（计划 agent-doc/plan-t1night-2026-11-01.md）：档位 episode run 步数。本段改种子：种子 43（reset.seed=43 training.seed=43）。make_var_queue.py 生成，不要手改。
+1	1	t1-ep1-w2048-cap10m-fc20-s43-ml40	349999104

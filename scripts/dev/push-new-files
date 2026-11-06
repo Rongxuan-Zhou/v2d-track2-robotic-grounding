@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# 链在跑、不能整体同步（scripts/dev/remote 会改写 .v2d-source-commit，训练链见到就停）时，只往训练机放新文件（Mac 上执行）。
+# 计划 agent-doc/plan-box6-and-eval-runtime-2026-10-01.md 第 7 节第 2 步。规矩：
+#   - 每个路径必须是仓内已提交、工作树里没有改动的文件；
+#   - 远端必须还不存在（只加不改：不碰链正在用的任何文件），有一个已存在就整批不放；例外：V2D_PUSH_REPLACE_FROM=<提交> 时，
+#     远端已有的文件若与该提交里的版本 md5 相同（我们自己先前放上去的），允许覆盖；
+#   - rsync 先写临时文件再改名；放完逐个比 md5。
+# 打印：本地提交号、远端 .v2d-source-commit（不变）、每个文件的 md5 与是否一致。最后一行 PUSH_OK 或 PUSH_FAIL。
+# 用法：[V2D_ENV=ml40] scripts/dev/record box/deploy_<机器> scripts/dev/push-new-files <文件>...
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"; cd "$ROOT"
+. scripts/dev/_load-env
+[ $# -gt 0 ] || { echo "用法：push-new-files <文件>..." >&2; exit 2; }
+for f in "$@"; do
+  [[ $f != /* && $f != *..* ]] || { echo "只收仓内相对路径：$f" >&2; exit 2; }
+  git ls-files --error-unmatch -- "$f" >/dev/null 2>&1 || { echo "没提交：$f" >&2; exit 2; }
+  [ -z "$(git status --porcelain -- "$f")" ] || { echo "工作树里有改动：$f" >&2; exit 2; }
+done
+q="$(printf '%q ' "$@")"
+exists="$(ssh -o ConnectTimeout=20 "$V2D_HOST" "cd '$V2D_REMOTE' && for f in $q; do [ -e \"\$f\" ] && echo \"\$(md5sum \"\$f\")\"; done; true")"
+if [ -n "$exists" ]; then
+  # V2D_PUSH_REPLACE_FROM=<提交>：远端已有的文件，只有它的 md5 等于该提交里的版本（我们自己先前用本脚本放上去的那一版）才允许覆盖
+  [ -n "${V2D_PUSH_REPLACE_FROM:-}" ] || { echo "远端已存在（只加不改，整批不放）：" >&2; echo "$exists" >&2; exit 1; }
+  while read -r rmd5 f; do
+    want="$(git show "${V2D_PUSH_REPLACE_FROM}:$f" 2>/dev/null | md5 -q)" || want=none
+    [ "$rmd5" = "$want" ] || { echo "远端的 ${f}（md5 ${rmd5}）不是提交 ${V2D_PUSH_REPLACE_FROM} 里的版本，不覆盖，整批不放" >&2; exit 1; }
+    echo "  覆盖 ${f}：远端是 ${V2D_PUSH_REPLACE_FROM} 的版本（${rmd5}）"
+  done <<< "$exists"
+fi
+echo "本地提交 $(git rev-parse --short=12 HEAD)；远端来历 $(ssh -o ConnectTimeout=20 "$V2D_HOST" "cat '$V2D_REMOTE/.v2d-source-commit'")"
+rsync -a --relative -- "$@" "$V2D_HOST:$V2D_REMOTE/"
+remote="$(ssh -o ConnectTimeout=20 "$V2D_HOST" "cd '$V2D_REMOTE' && md5sum $q")"
+bad=0
+for f in "$@"; do
+  l="$(md5 -q "$f")"; r="$(awk -v f="$f" '$2 == f {print $1}' <<< "$remote")"
+  if [ "$l" = "$r" ]; then echo "  ok   $l  $f"; else echo "  FAIL 本地 $l 远端 ${r:-无}  $f"; bad=$((bad + 1)); fi
+done
+echo "远端来历（放完）$(ssh -o ConnectTimeout=20 "$V2D_HOST" "cat '$V2D_REMOTE/.v2d-source-commit'")"
+if [ "$bad" = 0 ]; then echo "PUSH_OK（$# 个文件）"; else echo "PUSH_FAIL $bad"; exit 1; fi

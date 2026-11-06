@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# 把本地工作树同步到训练机并在那边执行命令。
+#
+# 为什么是 rsync 而不是 git push/pull：迭代的节奏和值得留存的节奏不一样。
+# 工作树本身已在 git 里，所以源头不会丢；commit 由"这个结论值得留下"决定，
+# 而不是由"我要跑一下"决定，历史才不会变成流水账。
+#
+# 用法: scripts/dev/remote python stages/recovery/denoise.py --tier 2
+#       scripts/dev/remote            # 只同步，不执行
+#       V2D_ENV=ml40 scripts/dev/remote            # 换一台训练机（读 .env.ml40）
+#       V2D_DRYRUN=1 scripts/dev/remote            # 只列出会传/会删什么，不改远端、不执行命令
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+. "$ROOT/scripts/dev/_load-env"
+
+# ── 守卫 ────────────────────────────────────────────────────────────
+# 带 --delete 的 rsync 指向错误路径会删掉远端整个目录树。这台机器四人共用，
+# 所以宁可多几道检查：变量必须有值、不能是根或家目录、且远端必须已被
+# init-remote 标记过。任何一条不满足就拒绝执行。
+case "$V2D_REMOTE" in
+  ""|/|"~"|"~/"|/root|/home|/home/*/) echo "V2D_REMOTE 不安全: '${V2D_REMOTE}'" >&2; exit 1 ;;
+esac
+SENTINEL=".v2d-remote-root"
+if ! ssh "$V2D_HOST" "test -f '$V2D_REMOTE/$SENTINEL'" 2>/dev/null; then
+  echo "远端 ${V2D_REMOTE} 未初始化（缺 ${SENTINEL}）。先跑: scripts/dev/init-remote" >&2
+  exit 1
+fi
+# 服务器上有长链在跑（链启动时写 runs/.chain-active-<名字>，结束时删）就拒绝同步：同步会改写 .v2d-source-commit、
+# 换掉链后面才调用的脚本，链的来历核对会停掉剩下的训练。确要同步设 V2D_FORCE_SYNC=1。只读的查询请直接用 ssh。
+active="$(ssh "$V2D_HOST" "cat '$V2D_REMOTE'/runs/.chain-active-* 2>/dev/null" || true)"
+if [ -n "$active" ] && [ "${V2D_FORCE_SYNC:-0}" != 1 ]; then
+  echo "远端有长链在跑，拒绝同步：" >&2; echo "$active" | sed 's/^/  /' >&2
+  echo "（确要同步设 V2D_FORCE_SYNC=1；只读查询请直接 ssh）" >&2
+  exit 1
+fi
+
+# --filter ':- .gitignore' 复用 .gitignore，所以 data/ 和 runs/ 不上传。
+#
+# 但排除 != 保护：实测 --delete 会删掉接收端被排除的文件（.env 就这么丢过一次）。
+# 只有显式的 P(rotect) 规则才能保住它们，而这里面有 4 GB 数据集和训练产物。
+# P 规则必须排在 :- 合并规则之前，先匹配先生效。
+#
+# results/ 要 H 也要 P，两者缺一不可，原因是它是唯一"服务器产出、本地也留一份"的目录：
+#   P(rotect) 只防 --delete 删除，不防覆盖；
+#   H(ide) 才让发送端不传它。
+# 少了 H 就会发生：服务器刚算完新结果，下一次 remote 调用把本地的旧副本推回去盖掉。
+# 这事真实发生过一次（denoise_v3.txt 被 22:43 的旧版覆盖了 22:53 的新版）。
+# results/ 单向回流，只经 scripts/dev/pull-results。
+#
+# rsync 读 .gitignore 时不认 "!" 取反：.gitignore 里的 `.env.*` / `!.env.example` 在这里只剩前一条，
+# .env.example 会被当成排除项、再被 --delete 删掉（干跑实测）。所以在合并规则前显式放行它。
+RS=(-az --delete)
+[ "${V2D_DRYRUN:-0}" = 1 ] && RS+=(-n -i)
+# 记下这次同步的源码版本，fc_run.sh 与 record 写进运行记录（服务器上的副本不是 git 仓）。
+# git describe --dirty 看不到未跟踪的新文件，另用 git status --porcelain 判断。
+# results/ 不算：它被下面的 H 规则挡在同步之外，服务器上的代码与它无关；回流下来、还没提交的结果文件
+# 不应让这次同步被标成 dirty（否则每次 record 之后下一次同步都是 dirty）。
+SRC_DESC="$(git -C "$ROOT" describe --always --abbrev=12)"
+[ -n "$(git -C "$ROOT" status --porcelain -- . ':(exclude)results')" ] && SRC_DESC="$SRC_DESC-dirty"
+# 同步前先把远端版本标成 <版本>-syncing，rsync 完成后才写真实版本：同步被打断（例如 Mac 断网）时，
+# 远端留下的是半新半旧的树，之后在它上面起的运行会在记录里带着 -syncing，一眼能看出，重跑一次 remote 即可。
+[ "${V2D_DRYRUN:-0}" = 1 ] || ssh "$V2D_HOST" "printf '%s\n' '$SRC_DESC-syncing' > '$V2D_REMOTE/.v2d-source-commit'"
+rsync "${RS[@]}" \
+      --filter='P /.env' \
+      --filter='P /data/***' \
+      --filter='P /runs/***' \
+      --filter='H /results/***' --filter='P /results/***' \
+      --filter='P /third_party/video_to_data/***' \
+      --filter="P /$SENTINEL" \
+      --filter='P /.v2d-source-commit' \
+      --filter='+ /.env.example' \
+      --filter=':- .gitignore' \
+      --exclude '.git/' \
+      "$ROOT/" "$V2D_HOST:$V2D_REMOTE/"
+
+[ "${V2D_DRYRUN:-0}" = 1 ] && exit 0
+ssh "$V2D_HOST" "printf '%s\n' '$SRC_DESC' > '$V2D_REMOTE/.v2d-source-commit'"
+# 带命令时命令在前台 ssh 里跑：断网会连同进程一起断掉。耗时长的活在服务器上用 tmux 或 setsid nohup 起。
+[ $# -eq 0 ] && exit 0
+ssh "$V2D_HOST" "cd '$V2D_REMOTE' && set -a && [ -f .env ] && . ./.env; set +a; $(printf '%q ' "$@")"

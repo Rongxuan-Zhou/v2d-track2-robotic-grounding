@@ -1,0 +1,5 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep20-w2048-cap4m-r3o-mf4090	smoke-t1-ep20-w2048-cap4m-r3o-mf4090	2026-06-08_16-57-34_rice_cooker_clockwise_04	frame	553	true	0.002	0.005	4000000	42	no
+t1-ep25-w2048-cap4m-r3o-mf4090	smoke-t1-ep25-w2048-cap4m-r3o-mf4090	2026-03-20_11-59-57_cyan_water_bottle_rotate_01	frame	859	true	0.015	0.086	4000000	42	no
+t1-ep28-w2048-cap4m-r3o-mf4090	smoke-t1-ep28-w2048-cap4m-r3o-mf4090	2026-05-19_11-27-07_squeegee_sweep_away_from_you_03_	frame	988	true	0.015	0.086	4000000	42	no
+t1-ep11-w2048-cap4m-r3o-mf4090	smoke-t1-ep11-w2048-cap4m-r3o-mf4090	2026-04-24_13-56-58_light_blue_book_pick_place_09	frame	901	true	0.015	0.086	4000000	42	no

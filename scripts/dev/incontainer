@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# 在一次性容器里用 Isaac 的 python 跑命令，整仓挂到 /repo。在训练机上执行
+# （本地用 scripts/dev/remote scripts/dev/incontainer ... 调用）。
+#
+# 为什么需要：官方 run.sh 起的常驻容器只挂 third_party/video_to_data，看不到本仓的
+# stages/、libs/、data/、runs/。这是临时方案，不改官方 run.sh；长期挂载方式待 deploy/ ADR。
+# --user 用当前 uid 跑：否则写进 runs/ 的产物是 root 属主，宿主机上删不掉。
+# 但 /isaac-sim 只对 isaac-sim 组(1234)开放，所以要 --group-add；passwd/group 复用官方
+# run.sh 为常驻容器生成的那份（与 run.sh:270-305 同一做法），让 uid 在容器里有名字。
+# V2D_GPU=1 时加 --gpus all；默认不占 GPU（这台机器共用）。V2D_WORKDIR 改容器内工作目录
+# （训练脚本的日志路径相对 cwd，要让它落进 runs/ 而不是仓根）。
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd -P)"
+IMAGE=robotic-grounding:latest
+GPU_ARGS=()
+[ "${V2D_GPU:-0}" = 1 ] && GPU_ARGS=(--gpus all)
+ISAAC_GID="$(docker run --rm --entrypoint getent "$IMAGE" group isaac-sim | cut -d: -f3)"
+ID_ARGS=(--user "$(id -u):$(id -g)" --group-add "$ISAAC_GID")
+PW="$HOME/.cache/robotic-grounding/robotic-grounding-latest-gpu0"
+[ -f "$PW/passwd" ] && ID_ARGS+=(-v "$PW/passwd:/etc/passwd:ro" -v "$PW/group:/etc/group:ro")
+# Isaac Sim 启动要写 kit 的 data/cache/logs；复用 run.sh 为常驻容器建的目录（run.sh:350-352），
+# 着色器缓存也能沿用。两个容器同时起仿真时会共用缓存——目前常驻容器空闲，先这样。
+for d in data cache logs; do
+  [ -d "$PW/kit-$d" ] && ID_ARGS+=(-v "$PW/kit-$d:/isaac-sim/kit/$d")
+done
+ENV_ARGS=()
+for v in OMP_NUM_THREADS MKL_NUM_THREADS; do [ -n "${!v:-}" ] && ENV_ARGS+=(-e "$v=${!v}"); done
+exec docker run --rm "${GPU_ARGS[@]}" "${ID_ARGS[@]}" "${ENV_ARGS[@]}" -e HOME=/tmp \
+  -e ACCEPT_EULA=Y -e PRIVACY_CONSENT=Y -e PYTHONDONTWRITEBYTECODE=1 \
+  -v "$ROOT:/repo" -v "$ROOT/third_party/video_to_data:/workspace/video_to_data" \
+  -w "${V2D_WORKDIR:-/repo}" --entrypoint /isaac-sim/python.sh "$IMAGE" "$@"

@@ -1,0 +1,5 @@
+# Tier 1 接触标记提前：跟丢的 4 条的变体 A seed 42，参考换成 runs/motion/tier1_c10（接触起点提前 10 帧、补 15 帧内的空档，参考轨迹不变；ml40，buffer 1000 万），段 t1c 的候选导出（计划 agent-doc/plan-t1-contact-anticipation-2026-10-16.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	25	t1-ep25-w2048-cap10m-r3a-c10-ml40	349999104
+1	28	t1-ep28-w2048-cap10m-r3a-c10-ml40	349999104
+1	11	t1-ep11-w2048-cap10m-r3a-c10-ml40	349999104
+1	1	t1-ep1-w2048-cap10m-r3a-c10-ml40	349999104

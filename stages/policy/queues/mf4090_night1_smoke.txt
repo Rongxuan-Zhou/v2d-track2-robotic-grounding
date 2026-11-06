@@ -1,0 +1,5 @@
+# mf4090 今晚的 3 条逐帧满配（计划 agent-doc/plan-mf4090-night-2026-09-29.md）：第 2 轮剩下的短档 ep21，加第 3 轮按规则顺序的 ep27、ep3
+# （results/day2/pick_round2.txt、pick_round3.txt）。官方 G1 配方、逐帧回放、400 万 buffer；只有地面的序列 scene.support=false。
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep21-w2048-cap4m-mf4090 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-04-29_11-53-57_tall_bar_stool_pull_08/robot_name=g1/data.parquet 2048 4096000 training.replay.capacity=4000000 scene.support=false
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep27-w2048-cap4m-mf4090 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-05-01_11-15-05_woven_basket_ground_desk_10/robot_name=g1/data.parquet 2048 4096000 training.replay.capacity=4000000
+V2D_WANDB_PROJECT=v2d-selftest V2D_WANDB_TAG=smoke V2D_MAX_RETRY=0 V2D_GPU_APPS=1 V2D_WANDB_UPLOAD_CKPT=0 smoke-t1-ep3-w2048-cap4m-mf4090 /repo/runs/motion/tier1/whole_body/soma/sequence_id=2026-04-27_11-50-10_contigo_coffee_mug_handle_table_05/robot_name=g1/data.parquet 2048 4096000 training.replay.capacity=4000000

@@ -1,0 +1,36 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# 环境与密钥
+.env
+
+# 操作系统的目录元数据
+.DS_Store
+
+# 数据集与运行产物：体积大、可重新下载或重新生成，一律不进 git。
+# 可复现所需的配置、种子与上游版本写在仓里，产物本身留在本地。
+data/
+runs/
+
+# 官方 toolkit 的本地 checkout（接入方式待 ADR 定，见 third_party/README.md）
+third_party/video_to_data/
+
+# 第二台及以后的训练机：只覆盖 V2D_HOST / V2D_REMOTE，经 V2D_ENV=<名字> 选择（见 scripts/dev/_load-env）
+.env.*
+!.env.example
+
+# remote 同步时写到服务器上的源码版本号（本地不需要）
+.v2d-source-commit
+# 官方 submission kit（邮件 2026-09-28；只读，不改源码）
+third_party/v2d_submission_kit/
+
+# SOP 页面的视频素材（数据集派生，不进 git；发布时从 runs/site_media 经 Artifact files 上传）
+docs/site/media/
+
+# scripts/dev/record 写到一半的记录（跑完会改名成 .txt 或 .txt.failed）
+results/**/*.partial

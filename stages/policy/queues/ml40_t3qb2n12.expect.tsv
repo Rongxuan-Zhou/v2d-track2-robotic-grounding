@@ -1,0 +1,2 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t3-ep12-w2048-cap10m-r3a-gb5b2n12hdyn7-ml40	smoke-t3-ep12-w2048-cap10m-r3a-gb5b2n12hdyn7-ml40	2026-04-25_17-20-04_black_platform_turn_05	frame	700	false	0.015	0.086	10000000	42	no

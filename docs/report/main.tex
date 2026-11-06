@@ -1,0 +1,207 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Two-page extended abstract
+% From Human Videos to Dexterous Robot Capability workshop (CoRL 2026)
+% Formatting: NVIDIA tech report.
+%
+% Limit: 2 pages of main text; references, acknowledgments and
+% appendices do not count.
+%
+% Build:  pdflatex main && bibtex main && pdflatex main && pdflatex main
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\pdfoutput=1
+
+%%% == IMPORTANT ==
+%%% For anonymized submission (no authors, logo, copyright or
+%%% acknowledgments), use this:
+%\documentclass[10pt, logo, copyright, anonymous]{nvidiaextabstract}
+
+%%% For camera-ready, use this:
+\documentclass[10pt]{nvidiaextabstract}
+
+%%% Load required packages here (many are loaded by the class already:
+%%% amsmath, amssymb, graphicx, booktabs, xcolor, hyperref, natbib,
+%%% balance, enumitem, caption).
+\usepackage{microtype}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Venue: printed in the first-page footer. Comment out to drop it.
+\venue{From Human Videos to Dexterous Robot Capability (CoRL 2026)}
+
+%%% Logo in the top-left corner of page 1 (shown with the `logo' class
+%%% option). Options in [] go to \includegraphics; default is the NVIDIA
+%%% logo at width=90pt. The header is about 40pt tall, so keep height below that.
+%\logo[height=28pt]{assets/mylogo.png}
+
+%%% Printed instead of the authors when the `anonymous' option is set.
+\submissionID{maniphys.ai}
+
+\title{Per-Episode Policy Selection with an Object-Orientation Reward for Video-to-Robot Grounding}
+\shorttitle{maniphys.ai: Track 2 Technical Report}
+
+%%% Authors: to be filled in (names, order, affiliations, emails).
+\author[1]{Author list to be provided}
+\affil[1]{maniphysAI lab}
+
+\begin{abstract}
+\textbf{Abstract:}
+V2D Track 2 asks a Unitree G1 with Dex3 hands to reproduce 30 whole-body human-object interactions in simulation from clean trajectories, noisy trajectories or one video.
+The official FlashCHORD reward tracks the object position but not its orientation, so a policy can keep the object in place while it rotates away from the reference.
+We add one orientation reward term, keep the rest of the official recipe, and accept a new policy for an episode only under swap rules fixed before each experiment.
+On 12 tracked Tier 2 and Tier 3 episodes the term raised 4096-world ADD-AUC on 11, by 0.08 to 0.37.
+Together with a clean-room Tier 2 denoiser and a monocular Tier 3 reconstruction aligned at frame 0, the entry ranks first on the Tier 3 SP-SR board (3 November 2026).
+\end{abstract}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Author-defined commands.
+\definecolor{NvidiaGreen}{RGB}{118, 185, 0}
+\newcommand{\method}{\textsc{Method}\xspace}
+\newcommand{\rtho}{\textsc{r3o}\xspace}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+\label{sec:intro}
+
+Track 2 asks for a robot policy that reproduces each of 30 human-object interaction episodes, such as righting a fallen bar stool or handing a basket from one hand to the other.
+The input comes in three tiers: clean trajectories (Tier 1), trajectories with synthetic noise (Tier 2) and a single exocentric video (Tier 3).
+The tasks are whole-body and bimanual: one policy has to walk, make contact and carry the object without an assist force at the end of training.
+
+The official recipe trains FlashSAC, a soft actor-critic variant~\cite{haarnoja2018sac}, with a reward whose only object term is position.
+ADD-AUC averages the distance of object model points, so an object that is held at the right place but turned is still scored as an error.
+We therefore add a dense orientation term and treat the challenge as 90 tracking problems (30 episodes, 3 tiers), because one episode moves a board by only 1/30 and single-seed results vary widely.
+Our contributions are:
+\begin{itemize}
+  \item an object-orientation reward term (Eq.~\ref{eq:ori}) that raised 4096-world ADD-AUC on 11 of 12 tracked Tier 2 and Tier 3 episodes, by 0.08 to 0.37;
+  \item a per-episode selection procedure with swap rules fixed in advance, and an upload gate that discounts own-reference gains by a measured board transfer ratio of 0.21;
+  \item a clean-room Tier 2 denoiser and a monocular Tier 3 reconstruction chain with frame-0 alignment.
+\end{itemize}
+
+\section{Approach}
+\label{sec:approach}
+
+\paragraph{Base recipe.}
+Every policy is trained with the official FlashSAC configuration for 350\,M environment steps with 2048 parallel worlds and the official nine-stage curriculum, in which the object assist force decays to zero.
+The replay buffer holds 10\,M transitions on 48\,GB GPUs and 4\,M on a 24\,GB GPU.
+\emph{Variant A} changes two values: the object position reward width ($\sigma$ 0.2\,m $\rightarrow$ 0.05\,m) and the object orientation termination (1.5 $\rightarrow$ 0.6\,rad).
+
+\paragraph{Object-orientation reward (\rtho).}
+The official reward has twelve terms, and its only object term is on position; orientation enters only through a binary termination.
+We add a thirteenth term
+\begin{equation}
+\label{eq:ori}
+r_{\mathrm{ori}} = w \exp\!\left(-\theta_t^2 / \sigma^2\right),
+\end{equation}
+where $\theta_t$ is the geodesic angle between the simulated and the reference object orientation, with $w=1.0$ and $\sigma=0.4$\,rad in all curriculum stages.
+The term gives a gradient on orientation before the termination fires.
+It is set through two environment variables, so checkpoints keep the official configuration and the official evaluation code reads them unchanged.
+
+\paragraph{Selection.}
+Each candidate is evaluated in 4096 deterministic worlds against the reference of its own tier; Tier 2 and Tier 3 never use Tier 1 trajectories.
+A candidate replaces the listed policy of its episode only if ADD-AUC rises by at least 0.03, neither success rate drops by more than 0.02, and MPPE rises by at most 0.5\,cm (analogous rules on Tier 1).
+A new list is uploaded only if the mean ADD-AUC rises by at least 0.010 on the exported rollout and 0.005 on 4096 worlds, and if the predicted board score passes the next team by 0.002.
+The prediction multiplies the smaller of the two gains by 0.21, the board to own-reference ratio measured on a Tier 2 upload (+0.0039 against +0.0187).
+
+\paragraph{Tier 2 denoiser.}
+A hand-designed filter tuned on Tier 2 data only holds static segments on a support surface, bridges motion segments with Brownian-bridge interpolation, fixes flips and height, removes penetration by the smallest rotation and smooths, before retargeting.
+
+\paragraph{Tier 3 reconstruction.}
+The CARI4D pipeline segments the video with Grounding DINO and SAM\,2~\cite{liu2024groundingdino,ravi2024sam2}, estimates depth with MoGe~\cite{wang2025moge}, tracks the object with FoundationPose~\cite{wen2024foundationpose} and fits the SOMA body, with a focal length of 866\,px from a ceiling-grid calibration (default 830\,px).
+Static objects slide along their viewing ray onto the support, a dynamics pass removes implausible object motion, and object poses are picked among FoundationPose candidates for temporal consistency.
+As the organizers allowed on 21 October, one rigid transform per episode aligns frame 0 with the Tier 1 frame-0 pose; no later Tier 1 frame is used.
+
+\section{Experiments and Results}
+\label{sec:experiments}
+
+We trained about 370 policies in the official simulator on one RTX\,4090, one L40S and one L40.
+Table~\ref{tab:board} gives the board scores. On Tier 3, frame-0 alignment, reconstruction fixes and per-episode swaps raised the board ADD-AUC from 0.106 to 0.282 and SP-SR from 0.267 to 0.467 between 18 and 29 October; on Tier 1, per-episode swaps lowered MPPE from 24.5\,cm (13 October) to 8.47\,cm.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{lcccc}
+    \toprule
+    Tier & ADD-AUC & SP-SR & MP-SR & MPPE (cm) \\
+    \midrule
+    1 & 0.635 & 0.867 & 0.700 & 8.47 \\
+    2 & 0.518 & 0.733 & 0.533 & 15.32 \\
+    3 & 0.282 & \textbf{0.467}$^{\ast}$ & 0.100 & 36.60 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Public board scores of maniphys.ai on 3 November 2026. $^{\ast}$First place on the board.}
+  \label{tab:board}
+\end{table}
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{llccc}
+    \toprule
+    Tier & Ep. & Variant A & +\,\rtho & Swap \\
+    \midrule
+    2 & 0  & 0.400 & 0.774 & yes \\
+    2 & 10 & 0.397 & 0.594 & yes \\
+    2 & 18 & 0.521 & 0.855 & yes \\
+    2 & 21 & 0.516 & 0.503 & no \\
+    2 & 26 & 0.465 & 0.715 & yes \\
+    3 & 0  & 0.528 & 0.795 & yes \\
+    3 & 12 & 0.507 & 0.672 & no (MP-SR) \\
+    3 & 18 & 0.626 & 0.826 & yes \\
+    3 & 24 & 0.731 & 0.835 & yes \\
+    3 & 26 & 0.579 & 0.812 & yes \\
+    \bottomrule
+  \end{tabular}
+  \caption{4096-world ADD-AUC on the tier's own reference without and with \rtho (same seed, buffer and reference).}
+  \label{tab:r3o}
+\end{table}
+
+\paragraph{Orientation term.}
+This ablation isolates the term: each pair in Table~\ref{tab:r3o} differs only in Eq.~\ref{eq:ori}.
+Over the 12 tracked Tier 2 and Tier 3 episodes we tested, ADD-AUC rose on 11, by 0.08 to 0.37, and 10 met all swap conditions.
+On Tier 1 ep17 the base recipe had an object position error of 8.9\,cm but an orientation error of 42.0$^\circ$; with the term the orientation error fell to 22.7$^\circ$ and SP-SR rose from 0 to 0.932.
+The term does not help episodes that lose the object, and it can destabilize training: on Tier 2 ep21 the 4\,M run lost MP-SR (0.965 $\rightarrow$ 0.316), and the 10\,M run of Tier 3 ep26 collapsed to zero success, so that episode keeps its 4\,M run.
+
+\paragraph{Per-episode fixes on Tier 1.}
+These single-change tests ask whether the lost Tier 1 episodes share one cause.
+A larger grasp-closure weight (5 $\rightarrow$ 20) lowered the 4096-world MPPE of ep9 from 40.5 to 17.0\,cm, and an earlier reset when the palm leaves the reference (0.15 $\rightarrow$ 0.08\,m) lowered ep25 from 114.1 to 68.7\,cm; neither helped other lost episodes, so the causes look episode-specific.
+
+\section{Limitations}
+\label{sec:limits}
+
+Policies are per episode and all results are in simulation.
+Each arm uses one seed; on Tier 1, paired seeds of one recipe differed by up to 0.35 in MP-SR.
+Episodes that lose the object soon after first contact stay unsolved (7 on Tier 1, 7 on Tier 2, at least 9 on Tier 3).
+Own-reference gains overstate board gains, most on Tier 3, where 12 multi-phase successes against our reconstruction became 3 on the board.
+
+\balance
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+A dense object-orientation term, accepted per episode only under fixed rules, raised ADD-AUC on 11 of 12 tracked Tier 2 and Tier 3 episodes at the cost of two environment variables and about two GPU-hours per policy, and new episodes need no retraining.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% References, acknowledgments and appendices do not count toward
+%%% the two-page limit.
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% Optional appendix: starts on a new page and does not count toward
+%%% the two-page limit. Delete this part if you do not need it.
+\end{document}

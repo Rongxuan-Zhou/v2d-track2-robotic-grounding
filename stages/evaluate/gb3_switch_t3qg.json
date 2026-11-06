@@ -1,0 +1,49 @@
+{
+ "plan": "agent-doc/plan-t3-gb3-switch-2026-10-17.md 判据 G2（第 2 版）",
+ "step": 349999104,
+ "margin_cm": 4.0,
+ "sp_floor": 0.5,
+ "source": "现选 run 的 4096 世界值：results/t3probe/eval_table_probe1015.txt（10/11 的评测，10/16 核过与 fc_8c778f9 一致，results/t3kfix/reexport_checks_mf4090.txt）；ep20 取 results/t3kfix/retrain_switch_t3ps_mf4090.txt",
+ "pairs": [
+  {
+   "ep": 6,
+   "new": "t3-ep6-w2048-cap10m-r3a-gb3-ml40",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep6-w2048-cap10m-r3a-hm-ml40",
+   "cur_mppe": 3.79,
+   "cur_sp": 0.978,
+   "cur_mp": 0.198,
+   "report_only": false
+  },
+  {
+   "ep": 8,
+   "new": "t3-ep8-w2048-cap10m-r3a-gb3-ml40",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep8-w2048-cap10m-r3a-hm-ml40",
+   "cur_mppe": 2.32,
+   "cur_sp": 0.999,
+   "cur_mp": 0.998,
+   "report_only": false
+  },
+  {
+   "ep": 7,
+   "new": "t3-ep7-w2048-cap10m-r3a-gb3-ml40",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep7-w2048-cap10m-r3a-hm-ml40",
+   "cur_mppe": 2.11,
+   "cur_sp": 0.997,
+   "cur_mp": 0.996,
+   "report_only": false
+  },
+  {
+   "ep": 29,
+   "new": "t3-ep29-w2048-cap10m-r3a-gb3-ml40",
+   "ref_dir": "tier3_gb3",
+   "cur": "t3-ep29-w2048-cap4m-r3a-v2-mf4090",
+   "cur_mppe": 8.0,
+   "cur_sp": 0.713,
+   "cur_mp": 0.0,
+   "report_only": false
+  }
+ ]
+}

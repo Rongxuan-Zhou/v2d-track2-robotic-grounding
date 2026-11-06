@@ -1,0 +1,9 @@
+# Tier 1 冲第一 A1：难集与 MP 偏弱集在原参考上的变体 A seed 42（ml40，buffer 1000 万，基线取 Tier 1 现在交的清单），段 t1za 的候选导出（计划 agent-doc/plan-t1push-2026-10-29.md）：档位 episode run 步数。make_var_queue.py 生成，不要手改。
+1	25	t1-ep25-w2048-cap10m-r3a-ml40	349999104
+1	4	t1-ep4-w2048-cap10m-r3a-ml40	349999104
+1	10	t1-ep10-w2048-cap10m-r3a-ml40	349999104
+1	28	t1-ep28-w2048-cap10m-r3a-ml40	349999104
+1	11	t1-ep11-w2048-cap10m-r3a-ml40	349999104
+1	9	t1-ep9-w2048-cap10m-r3a-ml40	349999104
+1	1	t1-ep1-w2048-cap10m-r3a-ml40	349999104
+1	17	t1-ep17-w2048-cap10m-r3a-ml40	349999104

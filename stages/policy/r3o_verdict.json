@@ -1,0 +1,200 @@
+{
+  "_doc": "r3o 的最终判读（计划 agent-doc/plan-r3o-2026-10-15.md 2.2、2.3：P1 7 集、P2 8 集；修好 ≥ 2 集且对照过门槛记“有用”，修好 1 集或修好 0 集但有起色 ≥ 2 集记“看不清”，其余“没用”）。第一段（t1oa、t2oa）的对照与跟丢集照抄 stages/policy/r3o_gate.json；第二段（t1ob、t2ob）跟丢集的基线是现在交的那条 run（Tier 1 t1c1014b、Tier 2 b1014）4096 世界评测的 reference_tracking.failure_cause_fraction.object 与 spider_sr_uncentered，取自 baseline_record；10/16 10:1x MDT 登记，P1b、P2b 出结果之前。",
+  "P1": {
+    "tier": 1,
+    "control": {
+      "run": "t1-ep20-w2048-cap4m-r3o-mf4090",
+      "floor": 0.45
+    },
+    "lost": {
+      "t1-ep25-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep25-w2048-cap10m-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t1-ep28-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep28-w2048-cap4m-p185-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t1-ep11-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep11-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 0.999,
+        "baseline_sp": 0.0
+      },
+      "t1-ep4-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep4-w2048-cap10m-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/ml40/day2/eval_t1-ep4-w2048-cap10m-ml40_s349999104.txt"
+      },
+      "t1-ep9-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep9-w2048-cap10m-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/ml40/day2/eval_t1-ep9-w2048-cap10m-ml40_s349999104.txt"
+      },
+      "t1-ep1-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep1-w2048-cap4m-p185-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/day2/eval_t1-ep1-w2048-cap4m-p185-mf4090_s349999104.txt"
+      },
+      "t1-ep2-w2048-cap4m-r3o-mf4090": {
+        "baseline_run": "t1-ep2-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 0.987549,
+        "baseline_sp": 0.138184,
+        "baseline_record": "results/ml40/day2/eval_t1-ep2-w2048-cap10m-r3a-ml40_s349999104.txt"
+      }
+    }
+  },
+  "P2": {
+    "tier": 2,
+    "control": {
+      "run": "t2-ep12-w2048-cap10m-r3o-ml40",
+      "floor": 0.5
+    },
+    "lost": {
+      "t2-ep25-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep25-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t2-ep28-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep28-w2048-cap4m-p185-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t2-ep1-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep1-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t2-ep4-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep4-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/ml40/day2/eval_t2-ep4-w2048-cap10m-r3a-ml40_s349999104.txt"
+      },
+      "t2-ep17-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep17-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 0.661865,
+        "baseline_sp": 0.001953,
+        "baseline_record": "results/day2/eval_t2-ep17-w2048-cap4m-mf4090_s349999104.txt"
+      },
+      "t2-ep9-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep9-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/day2/eval_t2-ep9-w2048-cap4m-mf4090_s349999104.txt"
+      },
+      "t2-ep2-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep2-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 0.736816,
+        "baseline_sp": 0.422119,
+        "baseline_record": "results/ml40/day2/eval_t2-ep2-w2048-cap10m-r3a-ml40_s349999104.txt"
+      },
+      "t2-ep11-w2048-cap10m-r3o-ml40": {
+        "baseline_run": "t2-ep11-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 0.593018,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/day2/eval_t2-ep11-w2048-cap4m-mf4090_s349999104.txt"
+      }
+    }
+  },
+  "C1": {
+    "tier": 1,
+    "control": null,
+    "_doc": "接触标记提前（tier1_c10）的 Tier 1 四集，ml40；基线沿用 P1 登记的同集基线；10/16 14:5x 训练前登记（计划 agent-doc/plan-t1-contact-anticipation-2026-10-16.md）",
+    "lost": {
+      "t1-ep25-w2048-cap10m-r3a-c10-ml40": {
+        "baseline_run": "t1-ep25-w2048-cap10m-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t1-ep28-w2048-cap10m-r3a-c10-ml40": {
+        "baseline_run": "t1-ep28-w2048-cap4m-p185-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t1-ep11-w2048-cap10m-r3a-c10-ml40": {
+        "baseline_run": "t1-ep11-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 0.999,
+        "baseline_sp": 0.0
+      },
+      "t1-ep1-w2048-cap10m-r3a-c10-ml40": {
+        "baseline_run": "t1-ep1-w2048-cap4m-p185-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/day2/eval_t1-ep1-w2048-cap4m-p185-mf4090_s349999104.txt"
+      }
+    }
+  },
+  "C2": {
+    "tier": 1,
+    "control": null,
+    "_doc": "路 A：t1c 的 ep9、ep2（同 C1 的配方与判法，tier1_c10），ml40；只在 C1 总判是有用或看不清时起；基线沿用 P1 登记的同集基线；10/16 19:xx 训练前登记（计划 agent-doc/plan-c10-extend-2026-10-16.md）",
+    "lost": {
+      "t1-ep9-w2048-cap10m-r3a-c10-ml40": {
+        "baseline_run": "t1-ep9-w2048-cap10m-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/ml40/day2/eval_t1-ep9-w2048-cap10m-ml40_s349999104.txt"
+      },
+      "t1-ep2-w2048-cap10m-r3a-c10-ml40": {
+        "baseline_run": "t1-ep2-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 0.987549,
+        "baseline_sp": 0.138184,
+        "baseline_record": "results/ml40/day2/eval_t1-ep2-w2048-cap10m-r3a-ml40_s349999104.txt"
+      }
+    }
+  },
+  "C3": {
+    "tier": 2,
+    "control": null,
+    "_doc": "路 B：Tier 2 接触标记提前（tier2_c5，参数只由 Tier 2 的数据定），mf4090；基线沿用 P2 登记的同集基线；10/16 19:xx 训练前登记（计划 agent-doc/plan-c10-extend-2026-10-16.md）",
+    "lost": {
+      "t2-ep25-w2048-cap4m-r3a-c5-mf4090": {
+        "baseline_run": "t2-ep25-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      },
+      "t2-ep9-w2048-cap4m-r3a-c5-mf4090": {
+        "baseline_run": "t2-ep9-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/day2/eval_t2-ep9-w2048-cap4m-mf4090_s349999104.txt"
+      },
+      "t2-ep1-w2048-cap4m-r3a-c5-mf4090": {
+        "baseline_run": "t2-ep1-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 1.0,
+        "baseline_sp": 0.0
+      }
+    }
+  },
+  "C4": {
+    "tier": 2,
+    "control": null,
+    "_doc": "Tier 2 接触标记提前（tier2_c5）续跑：Tier 2 诊断登记的其余合格集 ep2、11、17，mf4090；基线沿用 P2 登记的同集基线；10/17 13:4x 训练前登记（计划 agent-doc/plan-c10-extend-2026-10-16.md 第 4 版）",
+    "lost": {
+      "t2-ep2-w2048-cap4m-r3a-c5-mf4090": {
+        "baseline_run": "t2-ep2-w2048-cap10m-r3a-ml40",
+        "baseline_obj_fail": 0.736816,
+        "baseline_sp": 0.422119,
+        "baseline_record": "results/ml40/day2/eval_t2-ep2-w2048-cap10m-r3a-ml40_s349999104.txt"
+      },
+      "t2-ep11-w2048-cap4m-r3a-c5-mf4090": {
+        "baseline_run": "t2-ep11-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 0.593018,
+        "baseline_sp": 0.0,
+        "baseline_record": "results/day2/eval_t2-ep11-w2048-cap4m-mf4090_s349999104.txt"
+      },
+      "t2-ep17-w2048-cap4m-r3a-c5-mf4090": {
+        "baseline_run": "t2-ep17-w2048-cap4m-mf4090",
+        "baseline_obj_fail": 0.661865,
+        "baseline_sp": 0.001953,
+        "baseline_record": "results/day2/eval_t2-ep17-w2048-cap4m-mf4090_s349999104.txt"
+      }
+    }
+  }
+}

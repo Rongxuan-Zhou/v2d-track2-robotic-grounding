@@ -1,0 +1,3 @@
+run	smoke	sequence_id	playback	src_frames	support	pos_tol	ori_tol	capacity	seed	xeval
+t1-ep25-w2048-cap4m-fc20-mf4090	smoke-t1-ep25-w2048-cap4m-fc20-mf4090	2026-03-20_11-59-57_cyan_water_bottle_rotate_01	frame	859	true	0.015	0.086	4000000	42	no
+t1-ep9-w2048-cap4m-fc20-mf4090	smoke-t1-ep9-w2048-cap4m-fc20-mf4090	2026-06-04_16-45-04_big_red_bowl_under_skinny_wood_chair_03	frame	870	true	0.015	0.086	4000000	42	no

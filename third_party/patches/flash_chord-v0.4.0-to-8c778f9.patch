@@ -1,0 +1,828 @@
+# 上游 nvidia-isaac/video_to_data 从 v0.4.0（33129dd）到 8c778f905c（2026-09-29，#180–#185）在 robotic_grounding/flash_chord 下的全部改动，
+# 逐文件取自 GitHub 后用 diff -u 拼成（tools/make_fc_patch.sh 生成，不要手改）。改动只在评测代码、scene/support.py 与测试。
+# 用途：给 v0.4.0 打补丁，生成与 8c778f9 逐字节相同的评测运行时副本（stages/policy/make_fc_src_8c778f9.sh），不改 third_party/video_to_data。
+# 打补丁后各文件应与 flash_chord-8c778f9.sha256 一致。
+--- a/robotic_grounding/flash_chord/scripts/evaluate_policy.py
++++ b/robotic_grounding/flash_chord/scripts/evaluate_policy.py
+@@ -7,6 +7,7 @@
+ 
+ import json
+ import os
++from pathlib import Path
+ 
+ os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+ 
+@@ -47,6 +48,9 @@
+ def main(cfg: DictConfig) -> None:
+     """Rebuild the saved experiment from its checkpoint and score one evaluation cohort."""
+     evaluation = instantiate_typed(cfg.evaluation, EvaluationConfig)
++    object_trajectories_output = (
++        resolve_path(evaluation.object_trajectories_output) if evaluation.object_trajectories_output else None
++    )
+     outcome = evaluate_checkpoint(
+         resolve_path(evaluation.checkpoint),
+         world_count=evaluation.world_count,
+@@ -55,11 +59,15 @@
+         motion_start_frame=evaluation.motion_start_frame,
+         motion_end_frame=evaluation.motion_end_frame,
+         source_root=evaluation.source_root,
++        object_trajectories_output=object_trajectories_output,
++        eval_script=Path(__file__).resolve(),
+     )
+     scalars = evaluation_scalars(outcome)
+     print(json.dumps(scalars, indent=2, sort_keys=True), flush=True)
+     if evaluation.metrics_output:
+         print(f"report: {write_evaluation_report(evaluation.metrics_output, outcome)}", flush=True)
++    if object_trajectories_output:
++        print(f"object trajectories: {object_trajectories_output}", flush=True)
+     if evaluation.reset_mode == "explicit":
+         try:
+             publish_summary(cfg, scalars, outcome.environment_steps)
+--- a/robotic_grounding/flash_chord/src/flash_chord/configs/evaluation/flash_sac.yaml
++++ b/robotic_grounding/flash_chord/src/flash_chord/configs/evaluation/flash_sac.yaml
+@@ -9,4 +9,5 @@
+ motion_start_frame: null
+ motion_end_frame: null
+ metrics_output: null
++object_trajectories_output: null
+ source_root: null
+--- a/robotic_grounding/flash_chord/src/flash_chord/evaluation/harness.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/evaluation/harness.py
+@@ -12,6 +12,7 @@
+ import hashlib
+ import json
+ import os
++import re
+ import tempfile
+ from collections.abc import Mapping
+ from dataclasses import asdict, dataclass, is_dataclass, replace
+@@ -28,9 +29,14 @@
+     ObjectTrackingMetrics,
+     TrackingThresholds,
+     compute_object_tracking_metrics,
++    mean_per_point_error_cm,
+     object_mppe_cm,
+ )
+-from flash_chord.evaluation.rollout import ObjectPoseRollout, record_object_pose_rollout
++from flash_chord.evaluation.rollout import (
++    ObjectPoseRollout,
++    record_object_pose_rollout,
++    write_object_trajectories_parquet,
++)
+ from flash_chord.lifecycle.curriculum import CurriculumStage
+ from flash_chord.scene.collision import CollisionPolicy
+ from flash_chord.scene.setup import setup_scene
+@@ -114,6 +120,43 @@
+     return digest.hexdigest()
+ 
+ 
++#: Modules included in the evaluation-code digest.
++_EVALUATION_CODE_MODULES = ("__init__.py", "harness.py", "metrics.py", "rollout.py")
++
++
++def evaluation_code_sha256() -> str:
++    """Hash the evaluation module names and contents."""
++    directory = Path(__file__).resolve().parent
++    digest = hashlib.sha256()
++    for name in sorted(_EVALUATION_CODE_MODULES):
++        digest.update(name.encode())
++        digest.update(b"\0")
++        digest.update((directory / name).read_bytes())
++    return digest.hexdigest()
++
++
++def evaluation_provenance(
++    *,
++    checkpoint: Path,
++    parquet: str,
++    eval_script: str | Path | None = None,
++) -> dict[str, str]:
++    """Return checkpoint, evaluator, reference, and episode provenance."""
++    provenance = {
++        "checkpoint_sha256": file_sha256(checkpoint),
++        "eval_code_sha256": evaluation_code_sha256(),
++        "reference_parquet": str(parquet),
++    }
++    if eval_script is not None:
++        script = Path(eval_script).expanduser().resolve()
++        if script.is_file():
++            provenance["eval_script_sha256"] = file_sha256(script)
++    match = re.search(r"episode_(\d+)", str(parquet))
++    if match:
++        provenance["episode_index"] = str(int(match.group(1)))
++    return provenance
++
++
+ def _term_limit(termination: Mapping[str, Any], name: str) -> float | None:
+     """Threshold for one termination term, or ``None`` when the term is absent or disabled."""
+     term = termination.get(name)
+@@ -323,8 +366,10 @@
+     motion_start_frame: int | None = None,
+     motion_end_frame: int | None = None,
+     source_root: str | Path | None = None,
++    object_trajectories_output: str | Path | None = None,
++    eval_script: str | Path | None = None,
+ ) -> EvaluationOutcome:
+-    """Score one actor checkpoint over ``world_count`` unassisted full-sequence attempts."""
++    """Score a checkpoint and optionally export object trajectories."""
+     import jax
+     import jax.numpy as jnp
+ 
+@@ -445,11 +490,18 @@
+         score_rollout(rollout, thresholds),
+         chord_sr=reference_tracking.success_rate,
+     )
++    provenance = evaluation_provenance(
++        checkpoint=checkpoint_path,
++        parquet=str(cfg.task.parquet),
++        eval_script=eval_script,
++    )
++    if object_trajectories_output is not None:
++        write_object_trajectories_parquet(object_trajectories_output, rollout, provenance=provenance)
+     return EvaluationOutcome(
+         metrics=metrics,
+         reference_tracking=reference_tracking,
+         checkpoint=str(checkpoint_path),
+-        checkpoint_sha256=file_sha256(checkpoint_path),
++        checkpoint_sha256=provenance["checkpoint_sha256"],
+         environment_steps=int(metadata.get("environment_steps", -1)),
+         parquet=str(cfg.task.parquet),
+         world_count=env.world_count,
+@@ -491,12 +543,15 @@
+         rollout.object_body_names,
+     )
+     if rollout.non_finite_worlds:
+-        # The recorder zeroes invalid worlds; those placeholders must not contribute to MPPE.
++        # Exclude zero-filled invalid worlds from both MPPE results.
+         valid = np.ones(rollout.achieved_pose_w.shape[1], dtype=np.bool_)
+         valid[list(rollout.non_finite_worlds)] = False
+         metrics = replace(
+             metrics,
+             mppe_cm=object_mppe_cm(rollout.achieved_pose_w[:, valid], rollout.reference_pose_w),
++            mean_per_point_error_cm=mean_per_point_error_cm(
++                rollout.achieved_pose_w[:, valid], rollout.reference_pose_w
++            ),
+         )
+     return metrics
+ 
+@@ -597,6 +652,8 @@
+         "evaluation/mppe_cm": metrics.mppe_cm,
+         "evaluation/add_std_m": metrics.add_std_m,
+         "evaluation/spider_position_error_centered_m": metrics.spider_position_error_centered_m,
++        "evaluation/relative_position_error_cm": metrics.relative_position_error_cm,
++        "evaluation/mean_per_point_error_cm": metrics.mean_per_point_error_cm,
+         "evaluation/world_count": float(outcome.world_count),
+         "evaluation/environment_steps": float(outcome.environment_steps),
+     }
+--- a/robotic_grounding/flash_chord/src/flash_chord/evaluation/metrics.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/evaluation/metrics.py
+@@ -100,6 +100,8 @@
+     spider_sr_uncentered: float
+     spider_position_error_centered_m: float
+     maniptrans_sr: float
++    relative_position_error_cm: float
++    mean_per_point_error_cm: float
+     position_mean_centered: bool
+     world_count: int
+     step_count: int
+@@ -292,7 +294,62 @@
+     )
+     return float(np.mean(per_body)), per_body
+ 
++
++def relative_position_error_cm(
++    achieved_pose_w: np.ndarray,
++    reference_pose_w: np.ndarray,
++    body_object_ids: np.ndarray,
++) -> float:
++    """Mean pairwise root-body position error in each first object's frame (cm).
+ 
++    Averages over pairs, worlds, and frames; returns 0.0 for fewer than two objects.
++    """
++    achieved, reference = _aligned_poses(achieved_pose_w, reference_pose_w)
++    object_ids = _body_object_ids(body_object_ids, achieved.shape[2])
++    roots = [int(np.flatnonzero(object_ids == oid)[0]) for oid in np.unique(object_ids)]
++    if len(roots) < 2:
++        return 0.0
++
++    errors = []
++    for index, first in enumerate(roots):
++        for second in roots[index + 1 :]:
++            rotation = _rotation_matrix(achieved[:, :, first, 3:])
++            rotation_reference = _rotation_matrix(reference[:, :, first, 3:])
++            delta = achieved[:, :, second, :3] - achieved[:, :, first, :3]
++            delta_reference = reference[:, :, second, :3] - reference[:, :, first, :3]
++            local = np.einsum("twji,twj->twi", rotation, delta)
++            local_reference = np.einsum("twji,twj->twi", rotation_reference, delta_reference)
++            errors.append(np.linalg.norm(local - local_reference, axis=-1))
++    return float(np.mean(np.stack(errors)) * 100.0)
++
++
++#: Body-frame directions of the six MPPE keypoints.
++_MPPE_KEYPOINT_DIRECTIONS = np.array(
++    [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0], [-1.0, 0.0, 0.0], [0.0, -1.0, 0.0], [0.0, 0.0, -1.0]],
++    dtype=np.float64,
++)
++
++#: MPPE keypoint radius in metres.
++MPPE_KEYPOINT_RADIUS_M = 0.05
++
++
++def mean_per_point_error_cm(
++    achieved_pose_w: np.ndarray,
++    reference_pose_w: np.ndarray,
++) -> float:
++    """Mean reference error of six body-frame keypoints per object (cm).
++
++    Averages Euclidean distances over keypoints, bodies, worlds, and frames.
++    """
++    achieved, reference = _aligned_poses(achieved_pose_w, reference_pose_w)
++    offsets = _MPPE_KEYPOINT_DIRECTIONS * MPPE_KEYPOINT_RADIUS_M
++    rotation = _rotation_matrix(achieved[..., 3:])
++    rotation_reference = _rotation_matrix(reference[..., 3:])
++    keypoints = achieved[..., None, :3] + np.einsum("...ij,kj->...ki", rotation, offsets)
++    keypoints_reference = reference[..., None, :3] + np.einsum("...ij,kj->...ki", rotation_reference, offsets)
++    return float(np.linalg.norm(keypoints - keypoints_reference, axis=-1).mean() * 100.0)
++
++
+ def _per_world_pose_error(achieved: np.ndarray, reference: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+     """Frame-averaged ``(W, B)`` position error in metres and orientation error in radians."""
+     position = np.linalg.norm(achieved[..., :3] - reference[..., :3], axis=-1).mean(axis=0)
+@@ -397,6 +454,8 @@
+         add_std_m=float(np.std(add)),
+         add_std_per_body_m=tuple(float(np.std(add[..., body])) for body in range(add.shape[2])),
+         spider_sr_uncentered=float(np.mean(spider_mask)),
++        relative_position_error_cm=relative_position_error_cm(achieved_pose_w, reference_pose_w, body_object_ids),
++        mean_per_point_error_cm=mean_per_point_error_cm(achieved_pose_w, reference_pose_w),
+         spider_position_error_centered_m=float(
+             np.mean(spider_centered_position_error(achieved_pose_w, reference_pose_w))
+         ),
+--- a/robotic_grounding/flash_chord/src/flash_chord/evaluation/rollout.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/evaluation/rollout.py
+@@ -8,8 +8,11 @@
+ 
+ from __future__ import annotations
+ 
+-from collections.abc import Callable
++import os
++import tempfile
++from collections.abc import Callable, Mapping
+ from dataclasses import dataclass
++from pathlib import Path
+ 
+ import numpy as np
+ import warp as wp
+@@ -20,6 +23,7 @@
+ from flash_chord.utils.quat import quat_rotate_xyzw, wxyz_to_xyzw
+ 
+ _POSE_WIDTH = 7
++_TRAJECTORY_SCHEMA = "flash_chord_object_trajectories_v1"
+ 
+ 
+ @dataclass(frozen=True, slots=True)
+@@ -50,6 +54,154 @@
+     control_fps: float
+     start_frame: int
+     non_finite_worlds: tuple[int, ...]
++
++
++def _object_trajectory_schema(rollout: ObjectPoseRollout, provenance: Mapping[str, object] | None = None):
++    import pyarrow as pa
++
++    steps, worlds, bodies, width = rollout.achieved_pose_w.shape
++    metadata = {
++        b"flash_chord.schema": _TRAJECTORY_SCHEMA.encode(),
++        b"flash_chord.position_unit": b"meter",
++        b"flash_chord.quaternion_order": b"xyzw",
++        b"flash_chord.row_order": b"step,environment_id,object_body_id",
++        b"flash_chord.control_fps": str(rollout.control_fps).encode(),
++        b"flash_chord.start_frame": str(rollout.start_frame).encode(),
++        b"flash_chord.step_count": str(steps).encode(),
++        b"flash_chord.world_count": str(worlds).encode(),
++        b"flash_chord.object_body_count": str(bodies).encode(),
++        b"flash_chord.pose_width": str(width).encode(),
++    }
++    for key, value in (provenance or {}).items():
++        if value is None or str(value) == "":
++            continue
++        metadata[f"flash_chord.{key}".encode()] = str(value).encode()
++    return pa.schema(
++        [
++            pa.field("environment_id", pa.int32(), nullable=False),
++            pa.field("step", pa.int32(), nullable=False),
++            pa.field("reference_frame", pa.int32(), nullable=False),
++            pa.field("time_s", pa.float64(), nullable=False),
++            pa.field("object_id", pa.int32(), nullable=False),
++            pa.field("object_body_id", pa.int32(), nullable=False),
++            pa.field("object_body_name", pa.dictionary(pa.int32(), pa.string()), nullable=False),
++            pa.field("environment_valid", pa.bool_(), nullable=False),
++            pa.field("achieved_position_x", pa.float32(), nullable=False),
++            pa.field("achieved_position_y", pa.float32(), nullable=False),
++            pa.field("achieved_position_z", pa.float32(), nullable=False),
++            pa.field("achieved_quaternion_x", pa.float32(), nullable=False),
++            pa.field("achieved_quaternion_y", pa.float32(), nullable=False),
++            pa.field("achieved_quaternion_z", pa.float32(), nullable=False),
++            pa.field("achieved_quaternion_w", pa.float32(), nullable=False),
++            pa.field("reference_position_x", pa.float32(), nullable=False),
++            pa.field("reference_position_y", pa.float32(), nullable=False),
++            pa.field("reference_position_z", pa.float32(), nullable=False),
++            pa.field("reference_quaternion_x", pa.float32(), nullable=False),
++            pa.field("reference_quaternion_y", pa.float32(), nullable=False),
++            pa.field("reference_quaternion_z", pa.float32(), nullable=False),
++            pa.field("reference_quaternion_w", pa.float32(), nullable=False),
++        ],
++        metadata=metadata,
++    )
++
++
++def _validate_object_trajectory_rollout(rollout: ObjectPoseRollout) -> tuple[int, int, int]:
++    achieved = np.asarray(rollout.achieved_pose_w)
++    reference = np.asarray(rollout.reference_pose_w)
++    if achieved.ndim != 4 or achieved.shape[-1] != _POSE_WIDTH:
++        raise ValueError(f"achieved poses must have shape [step, world, body, 7], got {achieved.shape}")
++    steps, worlds, bodies, _ = achieved.shape
++    if reference.shape != (steps, bodies, _POSE_WIDTH):
++        raise ValueError(f"reference poses must have shape {(steps, bodies, _POSE_WIDTH)}, got {reference.shape}")
++    if np.asarray(rollout.body_object_ids).shape != (bodies,):
++        raise ValueError(
++            f"body_object_ids must have shape {(bodies,)}, got {np.asarray(rollout.body_object_ids).shape}"
++        )
++    if len(rollout.object_body_names) != bodies:
++        raise ValueError(f"object_body_names must contain {bodies} names, got {len(rollout.object_body_names)}")
++    if rollout.control_fps <= 0.0:
++        raise ValueError(f"control_fps must be positive, got {rollout.control_fps}")
++    invalid = np.asarray(rollout.non_finite_worlds, dtype=np.int64)
++    if invalid.size and (invalid.min() < 0 or invalid.max() >= worlds):
++        raise ValueError(f"non_finite_worlds must be within [0, {worlds}), got {rollout.non_finite_worlds}")
++    return steps, worlds, bodies
++
++
++def write_object_trajectories_parquet(
++    path: str | Path,
++    rollout: ObjectPoseRollout,
++    *,
++    step_chunk: int = 32,
++    provenance: Mapping[str, object] | None = None,
++) -> Path:
++    """Atomically write step-major object trajectories with Parquet provenance.
++
++    Poses use metres and xyzw quaternions; invalid worlds remain flagged.
++    """
++    import pyarrow as pa
++    import pyarrow.parquet as pq
++
++    if step_chunk <= 0:
++        raise ValueError(f"step_chunk must be positive, got {step_chunk}")
++    steps, worlds, bodies = _validate_object_trajectory_rollout(rollout)
++    destination = Path(path).expanduser().resolve()
++    destination.parent.mkdir(parents=True, exist_ok=True)
++    descriptor, temporary_name = tempfile.mkstemp(
++        prefix=f".{destination.name}.", suffix=".parquet", dir=destination.parent
++    )
++    os.close(descriptor)
++    temporary = Path(temporary_name)
++    schema = _object_trajectory_schema(rollout, provenance)
++    body_ids = np.arange(bodies, dtype=np.int32)
++    world_ids = np.arange(worlds, dtype=np.int32)
++    object_ids = np.asarray(rollout.body_object_ids, dtype=np.int32)
++    valid_worlds = np.ones(worlds, dtype=np.bool_)
++    if rollout.non_finite_worlds:
++        valid_worlds[np.asarray(rollout.non_finite_worlds, dtype=np.int64)] = False
++    pose_names = (
++        "position_x",
++        "position_y",
++        "position_z",
++        "quaternion_x",
++        "quaternion_y",
++        "quaternion_z",
++        "quaternion_w",
++    )
++    try:
++        with pq.ParquetWriter(temporary, schema, compression="zstd", use_dictionary=True) as writer:
++            for begin in range(0, steps, step_chunk):
++                end = min(begin + step_chunk, steps)
++                chunk_steps = end - begin
++                row_steps = np.repeat(np.arange(begin, end, dtype=np.int32), worlds * bodies)
++                row_worlds = np.tile(np.repeat(world_ids, bodies), chunk_steps)
++                row_bodies = np.tile(body_ids, chunk_steps * worlds)
++                row_object_ids = np.tile(object_ids, chunk_steps * worlds)
++                name_indices = pa.array(row_bodies, type=pa.int32())
++                names = pa.DictionaryArray.from_arrays(name_indices, pa.array(rollout.object_body_names))
++                achieved = np.asarray(rollout.achieved_pose_w[begin:end], dtype=np.float32).reshape(-1, _POSE_WIDTH)
++                reference = np.broadcast_to(
++                    np.asarray(rollout.reference_pose_w[begin:end], dtype=np.float32)[:, None, :, :],
++                    (chunk_steps, worlds, bodies, _POSE_WIDTH),
++                ).reshape(-1, _POSE_WIDTH)
++                columns = {
++                    "environment_id": pa.array(row_worlds),
++                    "step": pa.array(row_steps),
++                    "reference_frame": pa.array(row_steps + rollout.start_frame),
++                    "time_s": pa.array(row_steps.astype(np.float64) / rollout.control_fps),
++                    "object_id": pa.array(row_object_ids),
++                    "object_body_id": pa.array(row_bodies),
++                    "object_body_name": names,
++                    "environment_valid": pa.array(valid_worlds[row_worlds]),
++                }
++                for index, name in enumerate(pose_names):
++                    columns[f"achieved_{name}"] = pa.array(achieved[:, index])
++                    columns[f"reference_{name}"] = pa.array(reference[:, index])
++                writer.write_table(pa.Table.from_pydict(columns, schema=schema))
++        temporary.chmod(0o644)
++        os.replace(temporary, destination)
++    finally:
++        temporary.unlink(missing_ok=True)
++    return destination
+ 
+ 
+ @wp.kernel
+--- a/robotic_grounding/flash_chord/src/flash_chord/scene/support.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/scene/support.py
+@@ -2,9 +2,9 @@
+ # SPDX-License-Identifier: Apache-2.0
+ """Add a sequence's support surfaces (kinematic collision shapes) from its support USDA.
+ 
+-The support USDA holds inline ``Cylinder`` / ``Cube`` prims (a translate + dimensions). They
+-are added as static (kinematic) collision shapes the objects rest on. Newton cylinders extend
+-along Z, matching the USDA's ``axis = "Z"``.
++The support USDA holds inline ``Cylinder`` / ``Cube`` prims with authored transforms and
++dimensions. They are added as static (kinematic) collision shapes the objects rest on. Newton
++cylinders extend along Z, matching the USDA's ``axis = "Z"``.
+ """
+ 
+ from __future__ import annotations
+@@ -70,9 +70,7 @@
+             continue
+         translate = prim.GetAttribute("xformOp:translate").Get()
+         position = (
+-            (0.0, 0.0, 0.0)
+-            if translate is None
+-            else (float(translate[0]), float(translate[1]), float(translate[2]))
++            (0.0, 0.0, 0.0) if translate is None else (float(translate[0]), float(translate[1]), float(translate[2]))
+         )
+         if not all(math.isfinite(value) for value in position):
+             raise ValueError(f"support shape {prim.GetPath()} has a non-finite translation")
+@@ -83,7 +81,12 @@
+             )
+         else:
+             size = prim.GetAttribute("size").Get()
+-            dimensions = (float(size if size is not None else 2.0),)
++            scale = prim.GetAttribute("xformOp:scale").Get()
++            scale = (1.0, 1.0, 1.0) if scale is None else tuple(float(value) for value in scale)
++            if len(scale) != 3 or not all(math.isfinite(value) and value != 0.0 for value in scale):
++                raise ValueError(f"support shape {prim.GetPath()} must have a finite nonzero scale")
++            edge = float(size if size is not None else 2.0)
++            dimensions = tuple(edge * abs(value) for value in scale)
+         if not all(math.isfinite(value) and value > 0.0 for value in dimensions):
+             raise ValueError(f"support shape {prim.GetPath()} must have positive finite dimensions")
+         shapes.append((type_name, prim.GetName(), position, dimensions))
+@@ -111,9 +114,9 @@
+                 half_height=0.5 * height,
+                 label=name,
+             )
+-        else:  # Cube: USD `size` is the full edge length
+-            half = 0.5 * dimensions[0]
+-            builder.add_shape_box(body, xform=xform, hx=half, hy=half, hz=half, label=name)
++        else:  # Cube: USD `size * xformOp:scale` gives the full dimensions
++            hx, hy, hz = (0.5 * value for value in dimensions)
++            builder.add_shape_box(body, xform=xform, hx=hx, hy=hy, hz=hz, label=name)
+     if (
+         body != body_start
+         or builder.body_count != body_start + 1
+--- a/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/evaluation.py
++++ b/robotic_grounding/flash_chord/src/flash_chord/training/flash_sac/evaluation.py
+@@ -5,9 +5,9 @@
+ 
+ from __future__ import annotations
+ 
++from collections.abc import Callable
+ from contextlib import nullcontext
+ from dataclasses import dataclass
+-from typing import Callable
+ 
+ import jax
+ import jax.numpy as jnp
+@@ -36,6 +36,7 @@
+     motion_start_frame: int | None = None
+     motion_end_frame: int | None = None
+     metrics_output: str | None = None
++    object_trajectories_output: str | None = None
+     source_root: str | None = None
+ 
+     def __post_init__(self) -> None:
+--- a/robotic_grounding/flash_chord/tests/evaluation/test_evaluation_harness.py
++++ b/robotic_grounding/flash_chord/tests/evaluation/test_evaluation_harness.py
+@@ -40,7 +40,9 @@
+         with pytest.raises(ValueError, match="finite world"):
+             score_rollout(rollout, TrackingThresholds())
+     else:
+-        assert score_rollout(rollout, TrackingThresholds()).mppe_cm == pytest.approx(2.0)
++        result = score_rollout(rollout, TrackingThresholds())
++        assert result.mppe_cm == pytest.approx(2.0)
++        assert result.mean_per_point_error_cm == pytest.approx(2.0)
+ 
+ 
+ @pytest.mark.parametrize(
+@@ -222,3 +224,62 @@
+ 
+     assert metrics.reference_end_fraction == 0.5
+     assert metrics.success_rate == 0.5
++
++
++def test_evaluation_code_sha256_is_stable_and_covers_every_scoring_module(tmp_path):
++    import hashlib
++    from pathlib import Path
++
++    from flash_chord.evaluation import harness
++    from flash_chord.evaluation.harness import evaluation_code_sha256
++
++    digest = evaluation_code_sha256()
++    assert len(digest) == 64
++    assert digest == evaluation_code_sha256()
++
++    directory = Path(harness.__file__).resolve().parent
++    expected = hashlib.sha256()
++    for name in sorted(harness._EVALUATION_CODE_MODULES):
++        expected.update(name.encode())
++        expected.update(b"\0")
++        expected.update((directory / name).read_bytes())
++    assert digest == expected.hexdigest()
++    assert "metrics.py" in harness._EVALUATION_CODE_MODULES
++
++
++def test_evaluation_provenance_identifies_the_run(tmp_path):
++    from flash_chord.evaluation.harness import evaluation_provenance
++
++    checkpoint = tmp_path / "checkpoint"
++    checkpoint.write_bytes(b"weights")
++    script = tmp_path / "evaluate_policy.py"
++    script.write_text("# entry point\n")
++
++    provenance = evaluation_provenance(
++        checkpoint=checkpoint,
++        parquet="/workspace/data/chunk-000/episode_000011.parquet",
++        eval_script=script,
++    )
++
++    import hashlib
++
++    assert provenance["checkpoint_sha256"] == hashlib.sha256(b"weights").hexdigest()
++    assert provenance["eval_script_sha256"] == hashlib.sha256(script.read_bytes()).hexdigest()
++    assert provenance["episode_index"] == "11"
++    assert provenance["reference_parquet"].endswith("episode_000011.parquet")
++    assert len(provenance["eval_code_sha256"]) == 64
++
++
++def test_evaluation_provenance_omits_what_it_cannot_determine(tmp_path):
++    from flash_chord.evaluation.harness import evaluation_provenance
++
++    checkpoint = tmp_path / "checkpoint"
++    checkpoint.write_bytes(b"weights")
++
++    provenance = evaluation_provenance(
++        checkpoint=checkpoint, parquet="motion.parquet", eval_script=tmp_path / "absent.py"
++    )
++
++    assert "eval_script_sha256" not in provenance
++    assert "episode_index" not in provenance
++    assert provenance["checkpoint_sha256"]
+--- a/robotic_grounding/flash_chord/tests/evaluation/test_evaluation_metrics.py
++++ b/robotic_grounding/flash_chord/tests/evaluation/test_evaluation_metrics.py
+@@ -495,3 +495,74 @@
+     assert metrics.add_std_m > 0.0
+     assert len(metrics.add_std_per_body_m) == BODIES
+     assert metrics.mean_add_m == pytest.approx(offsets.mean(), abs=1e-9)
++
++
++def _two_object_cohort(steps=12, worlds=3, seed=5):
++    """A reference and a perturbed cohort with two single-body objects, xyzw quaternions."""
++    rng = np.random.default_rng(seed)
++    reference = np.zeros((steps, 2, 7))
++    reference[..., :3] = np.cumsum(rng.normal(0, 0.02, (steps, 2, 3)), axis=0)
++    axis = rng.normal(0, 1, (steps, 2, 3))
++    axis /= np.linalg.norm(axis, axis=-1, keepdims=True)
++    angle = rng.uniform(0, np.pi, (steps, 2))
++    reference[..., 3:6] = axis * np.sin(angle / 2)[..., None]
++    reference[..., 6] = np.cos(angle / 2)
++    achieved = np.repeat(reference[:, None], worlds, axis=1).copy()
++    return achieved, reference, np.asarray([0, 1], dtype=np.int64)
++
++
++def test_relative_position_error_is_zero_for_a_perfect_rollout():
++    from flash_chord.evaluation.metrics import relative_position_error_cm
++
++    achieved, reference, object_ids = _two_object_cohort()
++
++    assert relative_position_error_cm(achieved, reference, object_ids) == 0.0
++
++
++def test_relative_position_error_is_zero_for_a_single_object():
++    from flash_chord.evaluation.metrics import relative_position_error_cm
++
++    achieved, reference, _ = _two_object_cohort()
++
++    value = relative_position_error_cm(achieved[:, :, :1], reference[:, :1], np.asarray([0], dtype=np.int64))
++
++    assert value == 0.0
++
++
++def test_relative_position_error_is_invariant_to_moving_the_whole_scene():
++    from flash_chord.evaluation.metrics import relative_position_error_cm
++
++    achieved, reference, object_ids = _two_object_cohort()
++    achieved[..., :3] += np.asarray([0.3, -0.2, 0.1])
++
++    assert relative_position_error_cm(achieved, reference, object_ids) == pytest.approx(0.0, abs=1e-9)
++
++
++def test_relative_position_error_responds_to_the_first_object_orientation():
++    from flash_chord.evaluation.metrics import relative_position_error_cm
++
++    achieved, reference, object_ids = _two_object_cohort()
++    achieved[:, :, 0, 3:] = np.asarray([0.0, 0.0, np.sin(np.pi / 4), np.cos(np.pi / 4)])
++
++    assert relative_position_error_cm(achieved, reference, object_ids) > 1.0
++
++
++def test_relative_position_error_is_reported_in_centimetres():
++    from flash_chord.evaluation.metrics import relative_position_error_cm
++
++    achieved, reference, object_ids = _two_object_cohort()
++    reference[:, 0, 3:] = np.asarray([0.0, 0.0, 0.0, 1.0])
++    achieved[:, :, 0, 3:] = np.asarray([0.0, 0.0, 0.0, 1.0])
++    achieved[:, :, 1, 0] += 0.01
++
++    assert relative_position_error_cm(achieved, reference, object_ids) == pytest.approx(1.0)
++
++
++def test_relative_position_error_pairs_objects_by_their_root_body():
++    from flash_chord.evaluation.metrics import relative_position_error_cm
++
++    achieved, reference, _ = _two_object_cohort()
++
++    value = relative_position_error_cm(achieved, reference, np.asarray([0, 0], dtype=np.int64))
++
++    assert value == 0.0
+--- /dev/null
++++ b/robotic_grounding/flash_chord/tests/evaluation/test_object_trajectory_export.py
+@@ -0,0 +1,128 @@
++# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++# SPDX-License-Identifier: Apache-2.0
++
++"""Tests for the optional all-environment object-trajectory Parquet export."""
++
++import numpy as np
++import pyarrow.parquet as pq
++
++
++def test_object_trajectory_export_contains_every_step_world_and_body(tmp_path):
++    from flash_chord.evaluation.rollout import CompletionOutcome, ObjectPoseRollout, write_object_trajectories_parquet
++
++    achieved = np.arange(2 * 2 * 2 * 7, dtype=np.float32).reshape(2, 2, 2, 7)
++    reference = (100.0 + np.arange(2 * 2 * 7, dtype=np.float32)).reshape(2, 2, 7)
++    rollout = ObjectPoseRollout(
++        achieved_pose_w=achieved,
++        reference_pose_w=reference,
++        tracking_error=np.zeros((2, 2, 1), dtype=np.float32),
++        tracking_error_names=("object_position_m",),
++        object_vertices_o=np.zeros((2, 1, 3), dtype=np.float32),
++        body_object_ids=np.asarray([0, 1], dtype=np.int64),
++        object_body_names=("base", "lid"),
++        completion=CompletionOutcome(
++            completion_step=np.asarray([1, 1], dtype=np.int32),
++            terminated=np.zeros(2, dtype=np.bool_),
++            truncated=np.ones(2, dtype=np.bool_),
++            reference_progress=np.ones(2, dtype=np.float32),
++        ),
++        control_fps=50.0,
++        start_frame=3,
++        non_finite_worlds=(1,),
++    )
++
++    output = write_object_trajectories_parquet(tmp_path / "nested" / "trajectories.parquet", rollout, step_chunk=1)
++    table = pq.read_table(output)
++    rows = table.to_pylist()
++
++    assert output.stat().st_mode & 0o777 == 0o644
++    assert table.num_rows == 8
++    assert table.schema.metadata[b"flash_chord.schema"] == b"flash_chord_object_trajectories_v1"
++    assert table.schema.metadata[b"flash_chord.quaternion_order"] == b"xyzw"
++    assert table.schema.metadata[b"flash_chord.world_count"] == b"2"
++    assert [(row["step"], row["environment_id"], row["object_body_id"]) for row in rows] == [
++        (step, world, body) for step in range(2) for world in range(2) for body in range(2)
++    ]
++    assert [row["reference_frame"] for row in rows[:4]] == [3, 3, 3, 3]
++    assert [row["reference_frame"] for row in rows[4:]] == [4, 4, 4, 4]
++    assert [row["time_s"] for row in rows[4:]] == [0.02, 0.02, 0.02, 0.02]
++    assert [row["object_body_name"] for row in rows[:4]] == ["base", "lid", "base", "lid"]
++    assert [row["environment_valid"] for row in rows] == [True, True, False, False] * 2
++    assert rows[5]["achieved_position_x"] == achieved[1, 0, 1, 0]
++    assert rows[5]["achieved_quaternion_w"] == achieved[1, 0, 1, 6]
++    assert rows[5]["reference_position_x"] == reference[1, 1, 0]
++    assert rows[5]["reference_quaternion_w"] == reference[1, 1, 6]
++
++
++def _minimal_rollout():
++    from flash_chord.evaluation.rollout import CompletionOutcome, ObjectPoseRollout
++
++    return ObjectPoseRollout(
++        achieved_pose_w=np.zeros((1, 1, 1, 7), dtype=np.float32),
++        reference_pose_w=np.zeros((1, 1, 7), dtype=np.float32),
++        tracking_error=np.zeros((1, 1, 1), dtype=np.float32),
++        tracking_error_names=("object_position_m",),
++        object_vertices_o=np.zeros((1, 1, 3), dtype=np.float32),
++        body_object_ids=np.asarray([0], dtype=np.int64),
++        object_body_names=("base",),
++        completion=CompletionOutcome(
++            completion_step=np.asarray([0], dtype=np.int32),
++            terminated=np.zeros(1, dtype=np.bool_),
++            truncated=np.ones(1, dtype=np.bool_),
++            reference_progress=np.ones(1, dtype=np.float32),
++        ),
++        control_fps=50.0,
++        start_frame=0,
++        non_finite_worlds=(),
++    )
++
++
++def test_object_trajectory_export_records_provenance_in_schema_metadata(tmp_path):
++    from flash_chord.evaluation.rollout import write_object_trajectories_parquet
++
++    output = write_object_trajectories_parquet(
++        tmp_path / "trajectories.parquet",
++        _minimal_rollout(),
++        provenance={
++            "checkpoint_sha256": "c" * 64,
++            "eval_script_sha256": "e" * 64,
++            "eval_code_sha256": "d" * 64,
++            "reference_parquet": "/workspace/data/chunk-000/episode_000007.parquet",
++            "episode_index": "7",
++        },
++    )
++    metadata = pq.read_table(output).schema.metadata
++
++    assert metadata[b"flash_chord.checkpoint_sha256"] == b"c" * 64
++    assert metadata[b"flash_chord.eval_script_sha256"] == b"e" * 64
++    assert metadata[b"flash_chord.eval_code_sha256"] == b"d" * 64
++    assert metadata[b"flash_chord.episode_index"] == b"7"
++    assert metadata[b"flash_chord.reference_parquet"].endswith(b"episode_000007.parquet")
++    assert metadata[b"flash_chord.schema"] == b"flash_chord_object_trajectories_v1"
++    assert metadata[b"flash_chord.quaternion_order"] == b"xyzw"
++
++
++def test_object_trajectory_export_omits_empty_provenance_values(tmp_path):
++    from flash_chord.evaluation.rollout import write_object_trajectories_parquet
++
++    output = write_object_trajectories_parquet(
++        tmp_path / "trajectories.parquet",
++        _minimal_rollout(),
++        provenance={"checkpoint_sha256": "c" * 64, "eval_script_sha256": "", "episode_index": None},
++    )
++    metadata = pq.read_table(output).schema.metadata
++
++    assert metadata[b"flash_chord.checkpoint_sha256"] == b"c" * 64
++    assert b"flash_chord.eval_script_sha256" not in metadata
++    assert b"flash_chord.episode_index" not in metadata
++
++
++def test_object_trajectory_export_without_provenance_is_unchanged(tmp_path):
++    from flash_chord.evaluation.rollout import write_object_trajectories_parquet
++
++    output = write_object_trajectories_parquet(tmp_path / "trajectories.parquet", _minimal_rollout())
++    table = pq.read_table(output)
++
++    assert table.num_rows == 1
++    assert b"flash_chord.checkpoint_sha256" not in table.schema.metadata
++    assert table.schema.metadata[b"flash_chord.schema"] == b"flash_chord_object_trajectories_v1"
+--- a/robotic_grounding/flash_chord/tests/scene/test_support.py
++++ b/robotic_grounding/flash_chord/tests/scene/test_support.py
+@@ -62,6 +62,30 @@
+     assert len(builder.shape_body) == 0
+ 
+ 
++def test_cube_support_applies_authored_nonuniform_scale(tmp_path):
++    import newton
++    from flash_chord.scene.support import add_support_surfaces
++
++    support = tmp_path / "scaled_cube.usda"
++    support.write_text(
++        """#usda 1.0
++
++def Cube "tabletop"
++{
++    double size = 1
++    double3 xformOp:scale = (0.84, 0.282, 0.01)
++    uniform token[] xformOpOrder = ["xformOp:scale"]
++}
++"""
++    )
++    builder = newton.ModelBuilder()
++
++    binding = add_support_surfaces(builder, support)
++
++    assert binding is not None
++    assert tuple(float(value) for value in builder.shape_scale[0]) == pytest.approx((0.42, 0.141, 0.005))
++
++
+ @pytest.mark.sequence_data
+ def test_build_scene_includes_support():
+     import warp as wp

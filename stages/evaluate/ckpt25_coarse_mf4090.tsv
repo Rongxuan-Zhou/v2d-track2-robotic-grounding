@@ -1,0 +1,15 @@
+# ep25（cyan_water_bottle_rotate，859 帧，回放 frame）粗扫：每条 run 第 3、6、10、15、20、25、30 份 checkpoint（步数 = 份数 × 10000384），4096 世界。计划 agent-doc/plan-ep25-sweep-seeds-2026-10-18.md 第 2 节。Tier 2 排前面。
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	30001152	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	60002304	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	100003840	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	150005760	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	200007680	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	250009600	frame	859
+eval	t2-ep25-w2048-cap4m-r3a-c5-mf4090	300011520	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	30001152	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	60002304	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	100003840	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	150005760	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	200007680	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	250009600	frame	859
+eval	t1-ep25-w2048-cap4m-r3o-mf4090	300011520	frame	859
